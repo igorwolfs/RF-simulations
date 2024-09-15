@@ -9,7 +9,8 @@
  (c) 2016-2023 Thorsten Liebig <thorsten.liebig@gmx.de>
 
 """
-
+import sys
+# sys.path.append('~/bin/openEMS/openEMS-Project/CSXCAD/python');
 ### Import Libraries
 import os, tempfile
 from pylab import *

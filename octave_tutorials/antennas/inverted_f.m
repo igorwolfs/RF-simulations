@@ -11,6 +11,9 @@
 %
 % (C) 2013 Stefan Mahr <dac922@gmx.de>
 
+addpath('~/opt/openEMS/share/openEMS/matlab');
+addpath('~/opt/openEMS/share/CSXCAD/matlab');
+
 close all
 clear
 clc

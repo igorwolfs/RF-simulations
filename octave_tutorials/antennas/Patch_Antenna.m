@@ -12,6 +12,12 @@
 %
 % (C) 2010,2011 Thorsten Liebig <thorsten.liebig@uni-due.de>
 
+addpath('~/opt/openEMS/share/openEMS/matlab');
+addpath('~/opt/openEMS/share/CSXCAD/matlab');
+
+addpath('~/opt/openEMS/share/openEMS/matlab');
+addpath('~/opt/openEMS/share/CSXCAD/matlab');
+
 close all
 clear
 clc
