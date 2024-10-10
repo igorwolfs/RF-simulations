@@ -130,4 +130,53 @@
 		(layer "Edge.Cuts")
 		(uuid "a1f16768-bd05-4696-bc7f-1d63b4778ef9")
 	)
+	(segment
+		(start 102.5 52.5)
+		(end 102.5 54.9)
+		(width 0.2)
+		(layer "F.Cu")
+		(net 0)
+		(uuid "3d6302f4-c626-4e8a-9813-2f69a2140d31")
+	)
+	(segment
+		(start 102.5 50.1)
+		(end 102.5 52.5)
+		(width 0.2)
+		(layer "F.Cu")
+		(net 0)
+		(uuid "6ba0da49-f3c7-4984-a700-1368a23ee1ef")
+	)
+	(zone
+		(net 0)
+		(net_name "")
+		(layer "B.Cu")
+		(uuid "8d229eb4-ef2f-4b68-8fdf-84876e2eb4f9")
+		(hatch edge 0.5)
+		(connect_pads
+			(clearance 0.5)
+		)
+		(min_thickness 0.25)
+		(filled_areas_thickness no)
+		(fill yes
+			(thermal_gap 0.5)
+			(thermal_bridge_width 0.5)
+			(island_removal_mode 1)
+			(island_area_min 10)
+		)
+		(polygon
+			(pts
+				(xy 99.5 49.5) (xy 99.5 55.5) (xy 105.5 55.5) (xy 105.5 49.5)
+			)
+		)
+		(filled_polygon
+			(layer "B.Cu")
+			(island)
+			(pts
+				(xy 104.943039 50.019685) (xy 104.988794 50.072489) (xy 105 50.124) (xy 105 54.876) (xy 104.980315 54.943039)
+				(xy 104.927511 54.988794) (xy 104.876 55) (xy 100.124 55) (xy 100.056961 54.980315) (xy 100.011206 54.927511)
+				(xy 100 54.876) (xy 100 50.124) (xy 100.019685 50.056961) (xy 100.072489 50.011206) (xy 100.124 50)
+				(xy 104.876 50)
+			)
+		)
+	)
 )
