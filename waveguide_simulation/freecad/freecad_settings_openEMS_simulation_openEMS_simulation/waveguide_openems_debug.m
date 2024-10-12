@@ -218,34 +218,11 @@ portUnits = 1;
 portExcitationAmplitude = 1.0;
 mslDir = 1;
 mslEVec = [0 0 -1]*portExcitationAmplitude;
+
+% CSX = AddBox( CSX, materialname, prio, MSL_start, MSL_stop );
+% ISSUE: for some reason it adds the full thing to it.
+% portstart and portstop are simply huge -> you need some kind-of component there where you start the excitation from.
+
 [CSX port{1}] = AddMSLPort(CSX,10000,1,'PEC',portStart, portStop, mslDir, mslEVec, 'Feed_R', portR*portUnits);
 portNamesAndNumbersList("coppers_fuse#F.Cu") = 1;
 
-
-%ISSUE: with 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% PROBES
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% PROBE - probe_EF - coppers_fuse#F.Cu
-CSX = AddDump(CSX, 'probe_EF_coppers_fuse#F.Cu', 'DumpType', 0, 'DumpMode', 2);
-dumpboxStart = [ 99.9825, -55.0175, -0.035 ];
-dumpboxStop  = [ 105.017, -49.9825, 1.565 ];
-CSX = AddBox(CSX, 'probe_EF_coppers_fuse#F.Cu', 0, dumpboxStart, dumpboxStop );
-
-%% PROBE - probe_EM - coppers_fuse#F.Cu
-CSX = AddDump(CSX, 'probe_EM_coppers_fuse#F.Cu', 'DumpType', 1, 'DumpMode', 2);
-dumpboxStart = [ 99.9825, -55.0175, -0.035 ];
-dumpboxStop  = [ 105.017, -49.9825, 1.565 ];
-CSX = AddBox(CSX, 'probe_EM_coppers_fuse#F.Cu', 0, dumpboxStart, dumpboxStop );
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% RUN
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-WriteOpenEMS( [Sim_Path '/' Sim_CSX], FDTD, CSX );
-CSXGeomPlot( [Sim_Path '/' Sim_CSX] );
-
-if (postprocessing_only==0)
-    %% run openEMS
-    RunOpenEMS( Sim_Path, Sim_CSX, openEMS_opts );
-end

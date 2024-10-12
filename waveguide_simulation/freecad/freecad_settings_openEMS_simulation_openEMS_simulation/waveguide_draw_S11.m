@@ -6,6 +6,9 @@
 %
 % This file has been automatically generated. Manual changes may be overwritten.
 %
+addpath('~/opt/openEMS/share/openEMS/matlab');
+addpath('~/opt/openEMS/share/CSXCAD/matlab');
+addpath('~/opt/openEMS/share/hyp2mat/matlab');
 
 close all
 clear
@@ -49,10 +52,12 @@ CSX = AddMetal( CSX, 'PEC' );
 
 %% MATERIAL - PEC
 CSX = AddMetal(CSX, 'PEC');
+CSX = ImportSTL(CSX, 'PEC', 9100, [currDir './copper_plane.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'PEC', 9200, [currDir '/copper_trace.stl'], 'Transform', {'Scale', fc_unit/unit});
 
 %% MATERIAL - FR4
 CSX = AddMaterial(CSX, 'FR4');
-CSX = SetMaterialProperty(CSX, 'FR4', 'Epsilon', 4.0, 'Mue', 0.0, 'Kappa', 0.0, 'Sigma', 0.0);
+CSX = SetMaterialProperty(CSX, 'FR4', 'Epsilon', 4.0, 'Mue', 1.0, 'Kappa', 0.0, 'Sigma', 0.0);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % GRID LINES
