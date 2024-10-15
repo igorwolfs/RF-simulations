@@ -5,3 +5,5 @@ octave_tutorials/tmp_mod/*
 *.vtr
 */et
 */ht
+*/.h5
+
