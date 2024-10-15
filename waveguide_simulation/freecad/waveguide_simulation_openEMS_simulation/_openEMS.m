@@ -7,9 +7,11 @@
 % This file has been automatically generated. Manual changes may be overwritten.
 %
 
+
 addpath('~/opt/openEMS/share/openEMS/matlab');
 addpath('~/opt/openEMS/share/CSXCAD/matlab');
 addpath('~/opt/openEMS/share/hyp2mat/matlab');
+
 
 close all
 clear
@@ -41,7 +43,7 @@ openEMS_opts = '';
 
 %% prepare simulation folder
 Sim_Path = 'simulation_output';
-Sim_CSX = 'waveguide.xml';
+Sim_CSX = '.xml';
 [status, message, messageid] = rmdir( Sim_Path, 's' ); % clear previous directory
 [status, message, messageid] = mkdir( Sim_Path ); % create empty simulation folder
 
@@ -63,39 +65,38 @@ CSX = InitCSX('CoordSystem', 0); % Cartesian coordinate system.
 mesh.x = []; % mesh variable initialization (Note: x y z implies type Cartesian).
 mesh.y = [];
 mesh.z = [];
-% deltaunit: unit 1 um, mesh: 
 CSX = DefineRectGrid(CSX, unit, mesh); % First call with empty mesh to set deltaUnit attribute.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% EXCITATION gps_sine
+% EXCITATION 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 f0 = 1.5*1000000000.0;
-fc = 0.2*1000000000.0;
-FDTD = SetGaussExcite( FDTD, f0, fc );
+fc = 0.4*1000000000.0;
+FDTD = SetGaussExcite( FDTD, f0, fc );W
 max_res = c0 / (f0 + fc) / 20;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MATERIALS AND GEOMETRY
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+CSX = AddMetal( CSX, 'PEC' );
 
 %% MATERIAL - PEC
 CSX = AddMetal(CSX, 'PEC');
-CSX = ImportSTL(CSX, 'PEC', 9100, [currDir './copper_plane.stl'], 'Transform', {'Scale', fc_unit/unit});
-CSX = ImportSTL(CSX, 'PEC', 9200, [currDir '/copper_trace.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'PEC', 9400, [currDir '/copper_solid#F.Cu_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'PEC', 9800, [currDir '/copper_solid001#B.Cu_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
 
 %% MATERIAL - FR4
 CSX = AddMaterial(CSX, 'FR4');
 CSX = SetMaterialProperty(CSX, 'FR4', 'Epsilon', 4.0, 'Mue', 1.0, 'Kappa', 0.0, 'Sigma', 0.0);
-CSX = ImportSTL(CSX, 'FR4', 9000, [currDir '/board_dielectric.stl'], 'Transform', {'Scale', fc_unit/unit});
-
+CSX = ImportSTL(CSX, 'FR4', 8500, [currDir '/board_solid_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% GRID LINES %
+% GRID LINES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% GRID - grid - board_wire#outline (Fixed Distance)
 mesh.x(mesh.x >= 100 & mesh.x <= 105) = [];
-
+display(mesh.x)
 % Array from 100 to 105, with increments of 0.001
 mesh.x = [ mesh.x (100:0.001:105) ];
 mesh.y(mesh.y >= -55 & mesh.y <= -50) = [];
@@ -204,42 +205,28 @@ mesh.y = [ mesh.y (-55.0175:0.001:-49.9825) ];
 mesh.z(mesh.z >= -0.035 & mesh.z <= 1.565) = [];
 mesh.z = [ mesh.z (-0.035:0.001:1.565) ];
 CSX = DefineRectGrid(CSX, unit, mesh);
+CSXGeomPlot( [Sim_Path '/' Sim_CSX] );
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % PORTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 portNamesAndNumbersList = containers.Map();
 
-% portStart -> portStop: [0,     -width/2,   height]
-% portStop -> portStop: [length   width/2   0]
-portStart = [ 99.9, -55, 1.565 ];
-portStop  = [ 105.02, -50.00, -0.035 ];
+%% PORT -  - pads_area001#F.Cu#1#
+portStart = [ 102, -55, 0 ];
+portStop  = [ 103, -54, 0 ];
 portR = 50.0;
 portUnits = 1;
 portExcitationAmplitude = 1.0;
 mslDir = 1;
 mslEVec = [0 0 -1]*portExcitationAmplitude;
 [CSX port{1}] = AddMSLPort(CSX,10000,1,'PEC',portStart, portStop, mslDir, mslEVec, 'Feed_R', portR*portUnits);
-portNamesAndNumbersList("coppers_fuse#F.Cu") = 1;
+portNamesAndNumbersList("pads_area001#F.Cu#1#") = 1;
 
-CSXGeomPlot( [Sim_Path '/' Sim_CSX] );
-
-%ISSUE: with 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % PROBES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% PROBE - probe_EF - coppers_fuse#F.Cu
-CSX = AddDump(CSX, 'probe_EF_coppers_fuse#F.Cu', 'DumpType', 0, 'DumpMode', 2);
-dumpboxStart = [ 99.9825, -55.0175, -0.035 ];
-dumpboxStop  = [ 105.017, -49.9825, 1.565 ];
-CSX = AddBox(CSX, 'probe_EF_coppers_fuse#F.Cu', 0, dumpboxStart, dumpboxStop );
-
-%% PROBE - probe_EM - coppers_fuse#F.Cu
-CSX = AddDump(CSX, 'probe_EM_coppers_fuse#F.Cu', 'DumpType', 1, 'DumpMode', 2);
-dumpboxStart = [ 99.9825, -55.0175, -0.035 ];
-dumpboxStop  = [ 105.017, -49.9825, 1.565 ];
-CSX = AddBox(CSX, 'probe_EM_coppers_fuse#F.Cu', 0, dumpboxStart, dumpboxStop );
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RUN

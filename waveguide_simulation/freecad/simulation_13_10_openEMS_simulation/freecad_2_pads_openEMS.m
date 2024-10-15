@@ -7,10 +7,6 @@
 % This file has been automatically generated. Manual changes may be overwritten.
 %
 
-addpath('~/opt/openEMS/share/openEMS/matlab');
-addpath('~/opt/openEMS/share/CSXCAD/matlab');
-addpath('~/opt/openEMS/share/hyp2mat/matlab');
-
 close all
 clear
 clc
@@ -41,7 +37,7 @@ openEMS_opts = '';
 
 %% prepare simulation folder
 Sim_Path = 'simulation_output';
-Sim_CSX = 'waveguide.xml';
+Sim_CSX = 'freecad_2_pads.xml';
 [status, message, messageid] = rmdir( Sim_Path, 's' ); % clear previous directory
 [status, message, messageid] = mkdir( Sim_Path ); % create empty simulation folder
 
@@ -53,7 +49,7 @@ FDTD = InitFDTD( 'NrTS', max_timesteps, 'EndCriteria', min_decrement);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % BOUNDARY CONDITIONS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-BC = {"PML_8","PML_8","PML_8","PML_8","PML_8","PML_8"};
+BC = {"PEC","PEC","PEC","PEC","PEC","PEC"};
 FDTD = SetBoundaryCond( FDTD, BC );
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -63,59 +59,114 @@ CSX = InitCSX('CoordSystem', 0); % Cartesian coordinate system.
 mesh.x = []; % mesh variable initialization (Note: x y z implies type Cartesian).
 mesh.y = [];
 mesh.z = [];
-% deltaunit: unit 1 um, mesh: 
 CSX = DefineRectGrid(CSX, unit, mesh); % First call with empty mesh to set deltaUnit attribute.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% EXCITATION gps_sine
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-f0 = 1.5*1000000000.0;
-fc = 0.2*1000000000.0;
-FDTD = SetGaussExcite( FDTD, f0, fc );
-max_res = c0 / (f0 + fc) / 20;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MATERIALS AND GEOMETRY
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+CSX = AddMetal( CSX, 'PEC' );
 
 %% MATERIAL - PEC
 CSX = AddMetal(CSX, 'PEC');
-CSX = ImportSTL(CSX, 'PEC', 9100, [currDir './copper_plane.stl'], 'Transform', {'Scale', fc_unit/unit});
-CSX = ImportSTL(CSX, 'PEC', 9200, [currDir '/copper_trace.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'PEC', 8400, [currDir '/board_wire#outline_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'PEC', 8500, [currDir '/board_area_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'PEC', 8600, [currDir '/board_solid_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
 
 %% MATERIAL - FR4
 CSX = AddMaterial(CSX, 'FR4');
 CSX = SetMaterialProperty(CSX, 'FR4', 'Epsilon', 4.0, 'Mue', 1.0, 'Kappa', 0.0, 'Sigma', 0.0);
-CSX = ImportSTL(CSX, 'FR4', 9000, [currDir '/board_dielectric.stl'], 'Transform', {'Scale', fc_unit/unit});
-
+CSX = ImportSTL(CSX, 'FR4', 8700, [currDir '/pads_wire#F.Cu#0#_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'FR4', 8800, [currDir '/pads_area#F.Cu#0#_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'FR4', 8900, [currDir '/pads_wire001#F.Cu#1#_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'FR4', 9000, [currDir '/pads_area001#F.Cu#1#_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'FR4', 9100, [currDir '/pads_area002#F.Cu_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'FR4', 9200, [currDir '/track_wire#F.Cu#0.2_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'FR4', 9300, [currDir '/track_area#F.Cu#0.2_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'FR4', 9400, [currDir '/copper_area#F.Cu_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'FR4', 9500, [currDir '/copper_solid#F.Cu_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'FR4', 9600, [currDir '/zone_wire#B.Cu_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'FR4', 9700, [currDir '/zone_area#B.Cu_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'FR4', 9800, [currDir '/copper_area001#B.Cu_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'FR4', 9900, [currDir '/copper_solid001#B.Cu_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
+CSX = ImportSTL(CSX, 'FR4', 10000, [currDir '/coppers_fuse#F.Cu_gen_model.stl'], 'Transform', {'Scale', fc_unit/unit});
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% GRID LINES %
+% GRID LINES
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% GRID - grid - board_wire#outline (Fixed Distance)
+%% GRID - 0.001 - board_wire#outline (Fixed Distance)
 mesh.x(mesh.x >= 100 & mesh.x <= 105) = [];
-
-% Array from 100 to 105, with increments of 0.001
 mesh.x = [ mesh.x (100:0.001:105) ];
 mesh.y(mesh.y >= -55 & mesh.y <= -50) = [];
-% Array from -55 to -50, with decrements of -0.001
 mesh.y = [ mesh.y (-55:0.001:-50) ];
 mesh.z(mesh.z >= 0 & mesh.z <= 0) = [];
 mesh.z = [ mesh.z (0:0.001:0) ];
 CSX = DefineRectGrid(CSX, unit, mesh);
 
-%% GRID - grid - board_solid (Fixed Distance)
+%% GRID - 0.001 - board_area (Fixed Distance)
 mesh.x(mesh.x >= 100 & mesh.x <= 105) = [];
 mesh.x = [ mesh.x (100:0.001:105) ];
-
 mesh.y(mesh.y >= -55 & mesh.y <= -50) = [];
 mesh.y = [ mesh.y (-55:0.001:-50) ];
-mesh.z(mesh.z >= 0 & mesh.z <= 1.53) = [];
-mesh.z = [ mesh.z (0:0.001:1.53) ];
+mesh.z(mesh.z >= 0 & mesh.z <= 0) = [];
+mesh.z = [ mesh.z (0:0.001:0) ];
 CSX = DefineRectGrid(CSX, unit, mesh);
 
-%% GRID - grid - track_wire#F.Cu#0.2 (Fixed Distance)
+%% GRID - 0.001 - board_solid (Fixed Distance)
+mesh.x(mesh.x >= 100 & mesh.x <= 105) = [];
+mesh.x = [ mesh.x (100:0.001:105) ];
+mesh.y(mesh.y >= -55 & mesh.y <= -50) = [];
+mesh.y = [ mesh.y (-55:0.001:-50) ];
+mesh.z(mesh.z >= 0 & mesh.z <= 1.51) = [];
+mesh.z = [ mesh.z (0:0.001:1.51) ];
+CSX = DefineRectGrid(CSX, unit, mesh);
+
+%% GRID - 0.001 - pads_wire#F.Cu#0# (Fixed Distance)
+mesh.x(mesh.x >= -0.5 & mesh.x <= 0.5) = [];
+mesh.x = [ mesh.x (-0.5:0.001:0.5) ];
+mesh.y(mesh.y >= -0.5 & mesh.y <= 0.5) = [];
+mesh.y = [ mesh.y (-0.5:0.001:0.5) ];
+mesh.z(mesh.z >= 0 & mesh.z <= 0) = [];
+mesh.z = [ mesh.z (0:0.001:0) ];
+CSX = DefineRectGrid(CSX, unit, mesh);
+
+%% GRID - 0.001 - pads_area#F.Cu#0# (Fixed Distance)
+mesh.x(mesh.x >= 102 & mesh.x <= 103) = [];
+mesh.x = [ mesh.x (102:0.001:103) ];
+mesh.y(mesh.y >= -51 & mesh.y <= -50) = [];
+mesh.y = [ mesh.y (-51:0.001:-50) ];
+mesh.z(mesh.z >= 0 & mesh.z <= 0) = [];
+mesh.z = [ mesh.z (0:0.001:0) ];
+CSX = DefineRectGrid(CSX, unit, mesh);
+
+%% GRID - 0.001 - pads_wire001#F.Cu#1# (Fixed Distance)
+mesh.x(mesh.x >= -0.5 & mesh.x <= 0.5) = [];
+mesh.x = [ mesh.x (-0.5:0.001:0.5) ];
+mesh.y(mesh.y >= -0.5 & mesh.y <= 0.5) = [];
+mesh.y = [ mesh.y (-0.5:0.001:0.5) ];
+mesh.z(mesh.z >= 0 & mesh.z <= 0) = [];
+mesh.z = [ mesh.z (0:0.001:0) ];
+CSX = DefineRectGrid(CSX, unit, mesh);
+
+%% GRID - 0.001 - pads_area001#F.Cu#1# (Fixed Distance)
+mesh.x(mesh.x >= 102 & mesh.x <= 103) = [];
+mesh.x = [ mesh.x (102:0.001:103) ];
+mesh.y(mesh.y >= -55 & mesh.y <= -54) = [];
+mesh.y = [ mesh.y (-55:0.001:-54) ];
+mesh.z(mesh.z >= 0 & mesh.z <= 0) = [];
+mesh.z = [ mesh.z (0:0.001:0) ];
+CSX = DefineRectGrid(CSX, unit, mesh);
+
+%% GRID - 0.001 - pads_area002#F.Cu (Fixed Distance)
+mesh.x(mesh.x >= 102 & mesh.x <= 103) = [];
+mesh.x = [ mesh.x (102:0.001:103) ];
+mesh.y(mesh.y >= -55 & mesh.y <= -50) = [];
+mesh.y = [ mesh.y (-55:0.001:-50) ];
+mesh.z(mesh.z >= 0 & mesh.z <= 0) = [];
+mesh.z = [ mesh.z (0:0.001:0) ];
+CSX = DefineRectGrid(CSX, unit, mesh);
+
+%% GRID - 0.001 - track_wire#F.Cu#0.2 (Fixed Distance)
 mesh.x(mesh.x >= 102.5 & mesh.x <= 102.5) = [];
 mesh.x = [ mesh.x (102.5:0.001:102.5) ];
 mesh.y(mesh.y >= -54.9 & mesh.y <= -50.1) = [];
@@ -124,7 +175,7 @@ mesh.z(mesh.z >= 0 & mesh.z <= 0) = [];
 mesh.z = [ mesh.z (0:0.001:0) ];
 CSX = DefineRectGrid(CSX, unit, mesh);
 
-%% GRID - grid - track_area#F.Cu#0.2 (Fixed Distance)
+%% GRID - 0.001 - track_area#F.Cu#0.2 (Fixed Distance)
 mesh.x(mesh.x >= 102.4 & mesh.x <= 102.6) = [];
 mesh.x = [ mesh.x (102.4:0.001:102.6) ];
 mesh.y(mesh.y >= -55 & mesh.y <= -50) = [];
@@ -133,25 +184,25 @@ mesh.z(mesh.z >= 0 & mesh.z <= 0) = [];
 mesh.z = [ mesh.z (0:0.001:0) ];
 CSX = DefineRectGrid(CSX, unit, mesh);
 
-%% GRID - grid - copper_area#F.Cu (Fixed Distance)
-mesh.x(mesh.x >= 102.4 & mesh.x <= 102.6) = [];
-mesh.x = [ mesh.x (102.4:0.001:102.6) ];
+%% GRID - 0.001 - copper_area#F.Cu (Fixed Distance)
+mesh.x(mesh.x >= 102 & mesh.x <= 103) = [];
+mesh.x = [ mesh.x (102:0.001:103) ];
 mesh.y(mesh.y >= -55 & mesh.y <= -50) = [];
 mesh.y = [ mesh.y (-55:0.001:-50) ];
 mesh.z(mesh.z >= 0 & mesh.z <= 0) = [];
 mesh.z = [ mesh.z (0:0.001:0) ];
 CSX = DefineRectGrid(CSX, unit, mesh);
 
-%% GRID - grid - copper_solid#F.Cu (Fixed Distance)
-mesh.x(mesh.x >= 102.4 & mesh.x <= 102.6) = [];
-mesh.x = [ mesh.x (102.4:0.001:102.6) ];
+%% GRID - 0.001 - copper_solid#F.Cu (Fixed Distance)
+mesh.x(mesh.x >= 102 & mesh.x <= 103) = [];
+mesh.x = [ mesh.x (102:0.001:103) ];
 mesh.y(mesh.y >= -55 & mesh.y <= -50) = [];
 mesh.y = [ mesh.y (-55:0.001:-50) ];
-mesh.z(mesh.z >= 1.53 & mesh.z <= 1.565) = [];
-mesh.z = [ mesh.z (1.53:0.001:1.565) ];
+mesh.z(mesh.z >= 1.51 & mesh.z <= 1.545) = [];
+mesh.z = [ mesh.z (1.51:0.001:1.545) ];
 CSX = DefineRectGrid(CSX, unit, mesh);
 
-%% GRID - grid - board_area (Fixed Distance)
+%% GRID - 0.001 - zone_wire#B.Cu (Fixed Distance)
 mesh.x(mesh.x >= 100 & mesh.x <= 105) = [];
 mesh.x = [ mesh.x (100:0.001:105) ];
 mesh.y(mesh.y >= -55 & mesh.y <= -50) = [];
@@ -160,16 +211,7 @@ mesh.z(mesh.z >= 0 & mesh.z <= 0) = [];
 mesh.z = [ mesh.z (0:0.001:0) ];
 CSX = DefineRectGrid(CSX, unit, mesh);
 
-%% GRID - grid - zone_wire#B.Cu (Fixed Distance)
-mesh.x(mesh.x >= 100 & mesh.x <= 105) = [];
-mesh.x = [ mesh.x (100:0.001:105) ];
-mesh.y(mesh.y >= -55 & mesh.y <= -50) = [];
-mesh.y = [ mesh.y (-55:0.001:-50) ];
-mesh.z(mesh.z >= 0 & mesh.z <= 0) = [];
-mesh.z = [ mesh.z (0:0.001:0) ];
-CSX = DefineRectGrid(CSX, unit, mesh);
-
-%% GRID - grid - zone_area#B.Cu (Fixed Distance)
+%% GRID - 0.001 - zone_area#B.Cu (Fixed Distance)
 mesh.x(mesh.x >= 99.9825 & mesh.x <= 105.017) = [];
 mesh.x = [ mesh.x (99.9825:0.001:105.017) ];
 mesh.y(mesh.y >= -55.0175 & mesh.y <= -49.9825) = [];
@@ -178,7 +220,7 @@ mesh.z(mesh.z >= 0 & mesh.z <= 0) = [];
 mesh.z = [ mesh.z (0:0.001:0) ];
 CSX = DefineRectGrid(CSX, unit, mesh);
 
-%% GRID - grid - copper_area001#B.Cu (Fixed Distance)
+%% GRID - 0.001 - copper_area001#B.Cu (Fixed Distance)
 mesh.x(mesh.x >= 99.9825 & mesh.x <= 105.017) = [];
 mesh.x = [ mesh.x (99.9825:0.001:105.017) ];
 mesh.y(mesh.y >= -55.0175 & mesh.y <= -49.9825) = [];
@@ -187,7 +229,7 @@ mesh.z(mesh.z >= 0 & mesh.z <= 0) = [];
 mesh.z = [ mesh.z (0:0.001:0) ];
 CSX = DefineRectGrid(CSX, unit, mesh);
 
-%% GRID - grid - copper_solid001#B.Cu (Fixed Distance)
+%% GRID - 0.001 - copper_solid001#B.Cu (Fixed Distance)
 mesh.x(mesh.x >= 99.9825 & mesh.x <= 105.017) = [];
 mesh.x = [ mesh.x (99.9825:0.001:105.017) ];
 mesh.y(mesh.y >= -55.0175 & mesh.y <= -49.9825) = [];
@@ -196,50 +238,14 @@ mesh.z(mesh.z >= -0.035 & mesh.z <= 0) = [];
 mesh.z = [ mesh.z (-0.035:0.001:0) ];
 CSX = DefineRectGrid(CSX, unit, mesh);
 
-%% GRID - grid - coppers_fuse#F.Cu (Fixed Distance)
+%% GRID - 0.001 - coppers_fuse#F.Cu (Fixed Distance)
 mesh.x(mesh.x >= 99.9825 & mesh.x <= 105.017) = [];
 mesh.x = [ mesh.x (99.9825:0.001:105.017) ];
 mesh.y(mesh.y >= -55.0175 & mesh.y <= -49.9825) = [];
 mesh.y = [ mesh.y (-55.0175:0.001:-49.9825) ];
-mesh.z(mesh.z >= -0.035 & mesh.z <= 1.565) = [];
-mesh.z = [ mesh.z (-0.035:0.001:1.565) ];
+mesh.z(mesh.z >= -0.035 & mesh.z <= 1.545) = [];
+mesh.z = [ mesh.z (-0.035:0.001:1.545) ];
 CSX = DefineRectGrid(CSX, unit, mesh);
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% PORTS
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-portNamesAndNumbersList = containers.Map();
-
-% portStart -> portStop: [0,     -width/2,   height]
-% portStop -> portStop: [length   width/2   0]
-portStart = [ 99.9, -55, 1.565 ];
-portStop  = [ 105.02, -50.00, -0.035 ];
-portR = 50.0;
-portUnits = 1;
-portExcitationAmplitude = 1.0;
-mslDir = 1;
-mslEVec = [0 0 -1]*portExcitationAmplitude;
-[CSX port{1}] = AddMSLPort(CSX,10000,1,'PEC',portStart, portStop, mslDir, mslEVec, 'Feed_R', portR*portUnits);
-portNamesAndNumbersList("coppers_fuse#F.Cu") = 1;
-
-CSXGeomPlot( [Sim_Path '/' Sim_CSX] );
-
-%ISSUE: with 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% PROBES
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% PROBE - probe_EF - coppers_fuse#F.Cu
-CSX = AddDump(CSX, 'probe_EF_coppers_fuse#F.Cu', 'DumpType', 0, 'DumpMode', 2);
-dumpboxStart = [ 99.9825, -55.0175, -0.035 ];
-dumpboxStop  = [ 105.017, -49.9825, 1.565 ];
-CSX = AddBox(CSX, 'probe_EF_coppers_fuse#F.Cu', 0, dumpboxStart, dumpboxStop );
-
-%% PROBE - probe_EM - coppers_fuse#F.Cu
-CSX = AddDump(CSX, 'probe_EM_coppers_fuse#F.Cu', 'DumpType', 1, 'DumpMode', 2);
-dumpboxStart = [ 99.9825, -55.0175, -0.035 ];
-dumpboxStop  = [ 105.017, -49.9825, 1.565 ];
-CSX = AddBox(CSX, 'probe_EM_coppers_fuse#F.Cu', 0, dumpboxStart, dumpboxStop );
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RUN

@@ -42,14 +42,14 @@ FDTD = SetGaussExcite(FDTD,0.5*(f_start+f_stop),0.5*(f_stop-f_start));
 
 % boundary conditions
 BC = [0 0 0 0 3 3]; %pml in pos. and neg. z-direction
-FDTD = SetBoundaryCond(FDTD,BC);
+FDTD = SetBoundaryCond(FDTD,[0 0 0 0 3 3]);
 
 %% setup CSXCAD mesh %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 CSX = InitCSX();
 mesh.x = SmoothMeshLines([0 a], mesh_res(1));
 mesh.y = SmoothMeshLines([0 b], mesh_res(2));
 mesh.z = SmoothMeshLines([0 length], mesh_res(3));
-CSX = DefineRectGrid(CSX, unit,mesh);
+CSX = DefineRectGrid(CSX, unit, mesh);
 
 %% apply the waveguide port %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 start=[mesh.x(1)   mesh.y(1)   mesh.z(11)];

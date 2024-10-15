@@ -9,6 +9,10 @@
 %  - openEMS v0.0.35
 %
 % (C) 2017 Thorsten Liebig <thorsten.liebig@gmx.de>
+addpath('~/opt/openEMS/share/openEMS/matlab');
+addpath('~/opt/openEMS/share/CSXCAD/matlab');
+addpath('~/opt/openEMS/share/hyp2mat/matlab');
+
 
 close all
 clear
@@ -111,6 +115,9 @@ Sim_CSX = 'strip2msl.xml';
 
 WriteOpenEMS( [Sim_Path '/' Sim_CSX], FDTD, CSX );
 CSXGeomPlot( [Sim_Path '/' Sim_CSX] );
+
+hi = "hi";
+
 RunOpenEMS( Sim_Path, Sim_CSX );
 
 %% Post-Processing

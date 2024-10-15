@@ -18,6 +18,9 @@ close all
 clear
 clc
 
+
+save_folder = "test";
+
 % init and define FDTD parameter
 FDTD = InitFDTD(100,0,'OverSampling',50);
 FDTD = SetSinusExcite(FDTD,10e6);
@@ -26,9 +29,19 @@ FDTD = SetBoundaryCond(FDTD,BC);
 
 % init and define FDTD mesh
 CSX = InitCSX();
+x_range = [-10 10];
+y_range = [-10 10];
+z_range = [-10 10];
+
+mesh_res = [1 1 1];
+
 mesh.x = -10:10;
 mesh.y = -10:10;
 mesh.z = -10:30;
+mesh.x = SmoothMeshLines(plate_x, mesh_res(1));
+mesh.y = SmoothMeshLines(plate_y, mesh_res(2));
+mesh.z = SmoothMeshLines(plate_z, mesh_res(3));
+
 CSX = DefineRectGrid(CSX, 1, mesh);
 
 % define the excitation
@@ -40,15 +53,15 @@ CSX = AddDump(CSX,'Et','DumpMode',0);
 CSX = AddBox(CSX,'Et',0,[-10 0 -10],[10 0 30]);
 
 % remove old simulation results (if exist)
-rmdir('tmp','s');mkdir('tmp');
+rmdir(save_folder,'s');mkdir(save_folder);
 
 % write openEMS xml data file
-WriteOpenEMS('tmp/tmp.xml',FDTD,CSX);
+WriteOpenEMS(strcat(save_folder,'/tmp.xml'),FDTD,CSX);
 
 % view defined structure
-CSXGeomPlot( 'tmp/tmp.xml' );
+CSXGeomPlot(strcat(save_folder,'/tmp.xml'));
 
 % run openEMS simulation
-RunOpenEMS('tmp','tmp.xml','');
+RunOpenEMS(save_folder,'tmp.xml','');
 
 disp('use Paraview to visualize the FDTD result...');

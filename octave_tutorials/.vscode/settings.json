@@ -1,0 +1,8 @@
+{
+    "terminal.integrated.profiles.linux": {
+        "Octave": {
+            "path": "/usr/bin/octave-cli",
+            "args": []
+        }
+    }
+}
