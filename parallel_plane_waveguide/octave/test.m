@@ -103,7 +103,7 @@ rmdir(save_folder,'s');mkdir(save_folder);
 WriteOpenEMS(strcat(save_folder,'/test.xml'),FDTD,CSX);
 
 % view defined structure
-% CSXGeomPlot(strcat(save_folder,'/test.xml'));
+CSXGeomPlot(strcat(save_folder,'/test.xml'));
 
 % run openEMS simulation
 RunOpenEMS(save_folder,'test.xml','-vvv');

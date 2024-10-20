@@ -21,7 +21,7 @@ physical_constants;
 unit = 1e-3; % drawing unit in mm, should be passed whenever creating a grid
 
 ### FREQUENCY
-f_start = 1e9;
+f_start = 1e6;
 f0 = 1.5e9;
 f_stop = 2e9;
 lambda0 = (c0/f0)/unit; % Number of discrete steps for 1 wavelength
@@ -160,7 +160,7 @@ WriteOpenEMS(strcat(save_folder,'/sinusoidal.xml'),FDTD,CSX);
 CSXGeomPlot(strcat(save_folder,'/sinusoidal.xml'));
 
 % run openEMS simulation
-RunOpenEMS(save_folder,'sinusoidal.xml','');
+RunOpenEMS(save_folder,'sinusoidal.xml','-vvv');
 
 disp('use Paraview to visualize the FDTD result...');
 
