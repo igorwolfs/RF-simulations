@@ -3,7 +3,9 @@ octave_tutorials/tmp_mod/*
 *.zip
 *.stl
 *.vtr
-*/et
-*/ht
+**/et
+**/ht
 *.h5
-
+**/.vscode
+*.xml
+*.vtp
