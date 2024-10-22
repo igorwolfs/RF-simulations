@@ -21,7 +21,7 @@ APPCSXCAD_CMD = '~/opt/openEMS/bin/AppCSXCAD'
 
 ### Setup the simulation
 Sim_Path = os.path.join(os.getcwd(), 'sinusoidal')
-print(f"SIM_PATH: {Sim_Path}")
+
 ###############################################################################################
 ###################################### SET CONSTANTS ###########################################
 ###############################################################################################
@@ -41,6 +41,9 @@ mesh_res = [1, 1, 1]
 plate_x = np.linspace(-10, 10, 21)
 plate_y = np.linspace(-10, 10, 21)
 plate_z = np.linspace(-10, 30, 41)
+# plate_x = np.linspace(-10, 10, 20)
+# plate_y = np.linspace(-10, 10, 20)
+# plate_z = np.linspace(-10, 30, 40)
 
 ###############################################################################################
 ###################################### INITIALIZE FDTD ########################################
@@ -75,7 +78,6 @@ mesh.AddLine('z', plate_z)
 
 #! WARNING: this is a guess
 # mesh.SmoothMeshLines('all', (C0 / fc / unit) / 20, 1)
-print(mesh)
 
 ####################################################################################
 ################################# EXCITATION #######################################
@@ -107,6 +109,7 @@ csx_excitation.AddBox(start, stop)
 #################################### DUMPS #########################################
 ####################################################################################
 
+
 ### Define dump box...
 start = [plate_x[0], 0, plate_z[0]]
 stop  = [plate_x[-1], 0, plate_z[-1]]
@@ -114,24 +117,19 @@ stop  = [plate_x[-1], 0, plate_z[-1]]
 Et = csx.AddDump('Et')
 Et.AddBox(start, stop)
 
+
 ### Run the simulation
 CSX_file = os.path.join(Sim_Path, 'plane_waveguide.xml')
 if not os.path.exists(Sim_Path):
     os.mkdir(Sim_Path)
-
-
 csx.Write2XML(CSX_file)
 
-from optparse import OptionParser
-import inspect
-results = inspect.getmembers(csx, predicate=inspect.isfunction)
-print(results)
+
 os.system(APPCSXCAD_CMD + ' "{}"'.format(CSX_file))
 str_cmd = APPCSXCAD_CMD + ' "{}"'.format(CSX_file)
-print(str_cmd)
 
 #### CHECK DIMENSIONS
-FDTD.Run(Sim_Path, cleanup=True, debug_material=True, debug_pec=True, debug_operator=True, debug_boxes=True, debug_csx=True, verbose=3)
+FDTD.Run(Sim_Path, cleanup=True, verbose=4)
 
 #######################################################################################
 #################################### COMMENTS #########################################
