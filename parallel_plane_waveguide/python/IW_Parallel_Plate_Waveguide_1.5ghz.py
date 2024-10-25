@@ -20,35 +20,49 @@ from openEMS import openEMS
 APPCSXCAD_CMD = '~/opt/openEMS/bin/AppCSXCAD'
 
 ### Setup the simulation
-Sim_Path = os.path.join(os.getcwd(), 'sinusoidal')
+Sim_Path = os.path.join(os.getcwd(), 'sinusoidalghz')
 
 ###############################################################################################
 ###################################### SET CONSTANTS ###########################################
 ###############################################################################################
 from openEMS.physical_constants import *
 
-unit = 1 # drawing unit in mm, should be passed whenever creating a grid
+unit = 1e-2 # drawing unit in mm, should be passed whenever creating a grid
 
 ### FREQUENCY
-f0 = 10e6
-fc = 10e3
+f_start = 1e6
+f0 = 1.5e9
+f_stop = 2e9
 
-lambda0 = (C0/f0)/unit; # Number of discrete steps for 1 wavelength
+lambda0 = np.ones(3) * (C0/f0) # Wavelength in meter
+print(f"Wavelength: {lambda0} in m")
+lambda0_u = lambda0 / unit # Wavelength in "units"
+print(f"Wavelength: {lambda0_u} times {unit} needed for one wavelength")
 
-mesh_res = [1, 1, 1]
+mesh_res_min = lambda0 / 30.0 # Make sure there are 30 mesh-steps per wavelength
+mesh_res_max = lambda0 / 20.0 # Make sure there are 30 mesh-steps per wavelength
 
-### PLATE DIMENSIONS
-plate_x = np.linspace(-10, 10, 21)
-plate_y = np.linspace(-10, 10, 21)
-plate_z = np.linspace(-10, 30, 41)
+print(f"Ideal mesh resolution range [{mesh_res_min[0]:.4f} -> {mesh_res_max[0]:.4f}]")
+
+### PLATE DIMENSIONS (since 20 times 1e-2 needed for 1 wavelength, and unit is 1e-2)
+
+plate_x = np.linspace(-20, 20, 41) * unit
+plate_y = np.linspace(-20, 20, 41) * unit
+plate_z = np.linspace(-20, 60, 81) * unit
+
+print(f"plate_x: {plate_x}")
+print(f"plate_y: {plate_y}")
+print(f"plate_z: {plate_z}")
 
 ###############################################################################################
 ###################################### INITIALIZE FDTD ########################################
 ###############################################################################################
 
+
 ### Setup FDTD parameter & excitation function
-NrTS_ = 100
-FDTD = openEMS(NrTS=NrTS_, EndCriteria=0, OverSampling=50)
+NrTS_ = 600 # Number of timesteps
+nyq_oversampling = 50 # Times the nyquist sampling rate we'll be sampling
+FDTD = openEMS(NrTS=NrTS_, EndCriteria=0, OverSampling=nyq_oversampling)
 
 #############################################################################################
 ################################# BOUNDARY CONDITIONS #######################################
@@ -68,7 +82,6 @@ FDTD.SetCSX(csx)
 mesh = csx.GetGrid()
 mesh.SetDeltaUnit(unit)
 
-
 mesh.AddLine('x', plate_x)
 mesh.AddLine('y', plate_y)
 mesh.AddLine('z', plate_z)
@@ -82,16 +95,7 @@ mesh.AddLine('z', plate_z)
 
 FDTD.SetSinusExcite(f0)
 
-'''
-It seems like there is something wrong here with the voltage excitation
-- Voltage excitations     : 420    (0, 420, 0)
-vs
-Warning: Unused primitive (type: Box) detected in property: excitation!
-- Voltage excitations     : 0      (0, 0, 0)
-'''
-#! WARNING: IT SEEMS LIKE THE EXCITATION IS NOT ACTUALLY ACTIVE
-
-# apply the excitation & resist as a current source
+### apply the excitation & resist as a current source
 start = [plate_x[0], plate_y[0], 0]
 stop  = [plate_x[-1], plate_y[-1], 0]
 
@@ -126,7 +130,7 @@ os.system(APPCSXCAD_CMD + ' "{}"'.format(CSX_file))
 str_cmd = APPCSXCAD_CMD + ' "{}"'.format(CSX_file)
 
 #### CHECK DIMENSIONS
-FDTD.Run(Sim_Path, cleanup=True, verbose=4)
+FDTD.Run(Sim_Path, cleanup=True, verbose=3, debug_material=True, debug_pec=True, debug_operator=True, debug_boxes=True, debug_csx=True)
 
 #######################################################################################
 #################################### COMMENTS #########################################
