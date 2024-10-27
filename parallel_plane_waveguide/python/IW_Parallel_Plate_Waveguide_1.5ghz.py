@@ -58,7 +58,6 @@ print(f"plate_z: {plate_z}")
 ###################################### INITIALIZE FDTD ########################################
 ###############################################################################################
 
-
 ### Setup FDTD parameter & excitation function
 NrTS_ = 600 # Number of timesteps
 nyq_oversampling = 50 # Times the nyquist sampling rate we'll be sampling
