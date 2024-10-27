@@ -125,7 +125,7 @@ os.system(AppCSXCAD_BIN + ' "{}"'.format(CSX_file))
 from CSXCAD.CSProperties import *
 
 ### FDTD SIMULATION
-FDTD.Run(Sim_Path, cleanup=True, debug_material=True, debug_pec=True, debug_operator=True, debug_boxes=True, debug_csx=True, verbose=3)
+#! FDTD.Run(Sim_Path, cleanup=True, debug_material=True, debug_pec=True, debug_operator=True, debug_boxes=True, debug_csx=True, verbose=3)
 
 #!############################### POST-PROCESSING #####################################
 #######################################################################################
@@ -137,13 +137,18 @@ CalcPort
 - freq: range of frequencies over which to calculate DFT
 Reads data from file
 - port_it_x / port_ut_x (current / voltage port 1) + appropriate time-step + mode purity
+
+*** RectWGPort ***
+
 '''
 
 ### Postprocessing & plotting
 freq = linspace(f_start,f_stop,201)
 for port in ports:
     port.CalcPort(Sim_Path, freq)
-
+print(f"BETA: {ports[0].beta}")
+print(f"\r\n uf_ref: {ports[0].uf_ref}\r\n")
+print(f"\r\n if_ref: {ports[0].if_ref}\r\n")
 
 ### S-Parameter calculation
 s11 = ports[0].uf_ref / ports[0].uf_inc
@@ -164,9 +169,8 @@ Function of
 DEF wave impedance: Wave impedance relates transverse field components.
 Function of material constants ONLY
 '''
+
 ZL_a = ports[0].ZL # analytic waveguide impedance
-
-
 
 ## Plot s-parameter
 figure()
@@ -261,4 +265,18 @@ NOTE:
 - Also supported inside closed conductors or between conductors
 source: https://www.microwaves101.com/encyclopedias/waveguide-wave-impedance
 source: Microwave engineering, 4th edition, page 96-102
+'''
+
+
+'''
+### QUESTIONS ###
+# On probes in waveguides for current
+The probe gets an E or H function passed to it, depending on what it needs to measure.
+How does it know based on this function what current it is measuring? What is the step between the function and the actual current? 
+Is it simply amperes law that the line integral of the magnetic field over the edge of the conductor is equal to the current contained inside the intergral?
+# On probes in waveguides for electric fields
+Is this the same thing as with the current? Only here we integrate the electric field along a line to find the potential between the start and ending point?
+So because the electric field within that element of the conductor surface is uniform, the voltage is also supposed to be uniform?
+But then which "line integral" do we really take? The one in the excitation direction? Since it seems like the line integral in the excitation plane wouldn't make much sense to take due to the uniform electric field?
+-> OR maybe it would, since only the outside of the waveguide is a PEC, the inside is in fact NOT. 
 '''
