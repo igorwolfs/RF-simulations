@@ -263,20 +263,19 @@ Z_TM = Ex / Hy = Beta / (omega * epsilon) = Beta * nu / k
 NOTE:
 - Also frequency dependent
 - Also supported inside closed conductors or between conductors
+
+-> Waveguides are conductors with metal or cylindrical cross-section.
+
 source: https://www.microwaves101.com/encyclopedias/waveguide-wave-impedance
 source: Microwave engineering, 4th edition, page 96-102
 '''
 
 
 '''
-### QUESTIONS ###
-# On probes in waveguides for current
-The probe gets an E or H function passed to it, depending on what it needs to measure.
-How does it know based on this function what current it is measuring? What is the step between the function and the actual current? 
-Is it simply amperes law that the line integral of the magnetic field over the edge of the conductor is equal to the current contained inside the intergral?
-# On probes in waveguides for electric fields
-Is this the same thing as with the current? Only here we integrate the electric field along a line to find the potential between the start and ending point?
-So because the electric field within that element of the conductor surface is uniform, the voltage is also supposed to be uniform?
-But then which "line integral" do we really take? The one in the excitation direction? Since it seems like the line integral in the excitation plane wouldn't make much sense to take due to the uniform electric field?
--> OR maybe it would, since only the outside of the waveguide is a PEC, the inside is in fact NOT. 
+### Probes in waveguides for current
+The probe gets an H-field function passed to it, depending on what it needs to measure.
+For current measurement amperes law states that the line integral of the magnetic field over the edge of the conductor is equal to the current contained inside the intergral.
+### Probes in waveguides for electric fields
+The probe gets an E field function passed to it, so because the electric field within that element of the conductor surface is uniform.
+The potential difference over 2 points is the line integral over the electric field from that point to the next.
 '''
