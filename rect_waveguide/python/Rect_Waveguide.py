@@ -92,14 +92,15 @@ from CSXCAD.CSProperties import *
 
 
 ### FDTD SIMULATION
-#! FDTD.Run(Sim_Path, cleanup=True, debug_material=True, debug_pec=True, debug_operator=True, debug_boxes=True, debug_csx=True, verbose=3)
+FDTD.Run(Sim_Path, cleanup=True, debug_material=True, debug_pec=True, debug_operator=True, debug_boxes=True, debug_csx=True, verbose=3)
 
 ### Postprocessing & plotting
 
 # start: 20e9 -> stop: 26e9, take 201 steps
 freq = linspace(f_start, f_stop, 201)
 
-# Frequency range from 0 to 200
+# Frequency range from 0 to 200 (so all values will be calculated with these frequencies in mind)
+# No reference impedance passed (WavveguidePort-class)
 for port in ports:
     port.CalcPort(Sim_Path, freq)
 
@@ -108,8 +109,8 @@ for port in ports:
 # | ut_tot / it_tot: is the whole time-series
 # | uf_ref = uf_tot - uf_inc | uf_inc = uf_tot * 0.5
 # | if_ref = if_inc - if_tot | if_inc = if_tot * 0.5
-print(f"Z_REF: {ports[0].Z_ref}")
-print(f"\r\n\r\narray: {ports[0].uf_ref.size()}\r\n\r\n")
+print(f"Z_REF: {len(ports[0].Z_ref)}")
+print(f"\r\n\r\narray: {len(ports[0].uf_ref)}\r\n\r\n")
 s11 = ports[0].uf_ref / ports[0].uf_inc
 s21 = ports[1].uf_ref / ports[0].uf_inc
 ZL  = ports[0].uf_tot / ports[0].if_tot
@@ -133,5 +134,12 @@ plot(freq*1e-6,ZL_a,'g-.',linewidth=2, label='$Z_{L, analytic}$')
 ylabel('ZL $(\Omega)$')
 xlabel(r'frequency (MHz) $\rightarrow$')
 legend()
-
 show()
+
+# MODE: TE10 -> Lowest possible cutoff frequency (= dominant mode)
+m = 1
+n = 0
+cutoff_wavelength = 2 / sqrt((m/a)**2 + (n/b)**2)
+cutoff_frequency = 1 / (cutoff_wavelength * sqrt(EPS0 * MUE0))
+
+print(f"Cutoff Frequency: {cutoff_frequency/1000:.2f} kHz")

@@ -63,17 +63,12 @@ mesh.AddLine('y', [0, b])
 mesh.AddLine('z', [0, length])
 
 ####################################################################################
-################################# EXCITATION #######################################
+################################# PORTS ############################################
 ####################################################################################
 
 
 #waveguide TE-mode definition
 TE_mode = 'TE10'
-
-f_start = 20e9
-f_stop  = 26e9
-
-FDTD.SetGaussExcite(0.5*(f_start+f_stop),0.5*(f_stop-f_start))
 
 ## Apply the waveguide port
 ports = []
@@ -101,6 +96,18 @@ mesh.AddLine('z', [start[2], stop[2]])
 ports.append(FDTD.AddRectWaveGuidePort( 1, start, stop, 'z', a*unit, b*unit, TE_mode))
 
 mesh.SmoothMeshLines('all', mesh_res, ratio=1.4)
+
+
+####################################################################################
+################################# EXCITATION #######################################
+####################################################################################
+
+
+
+f_start = 20e9
+f_stop  = 26e9
+
+FDTD.SetGaussExcite(0.5*(f_start+f_stop),0.5*(f_stop-f_start))
 
 ####################################################################################
 #################################### DUMPS #########################################
@@ -208,6 +215,7 @@ Each mode has a cut-off frequnecy, because
 Frequency too low -> lobes too big -> lobe doesn't fit on the waveguide anymore.
 TE10: has the lowest cutoff frequency, just as TE01 (due to symmetry, which is why we normally don't make square waveguides)
 
+NOTE: a rectangular waveguide does not support TEM mode since there will always be a longitudinal component to the electric and/or magnetic field.
 '''
 
 '''
