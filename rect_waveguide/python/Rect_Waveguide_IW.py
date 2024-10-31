@@ -287,3 +287,7 @@ For current measurement amperes law states that the line integral of the magneti
 The probe gets an E field function passed to it, so because the electric field within that element of the conductor surface is uniform.
 The potential difference over 2 points is the line integral over the electric field from that point to the next.
 '''
+
+'''
+NOTE: The probes all have a ModeFunction (sine / cosine) assigned to them.
+'''
