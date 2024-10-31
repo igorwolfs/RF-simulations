@@ -20,7 +20,7 @@ from openEMS import openEMS
 APPCSXCAD_CMD = '~/opt/openEMS/bin/AppCSXCAD'
 
 ### Setup the simulation
-Sim_Path = os.path.join(os.getcwd(), 'NotchFilter')
+Sim_Path = os.path.join(os.getcwd(), 'NotchFilter_50')
 
 
 from openEMS.physical_constants import *
@@ -118,11 +118,11 @@ NOTE:
 '''
 portstart = [ -MSL_length, -MSL_width/2, substrate_thickness]
 portstop  = [ 0,  MSL_width/2, 0]
-port[0] = FDTD.AddMSLPort( 1,  pec, portstart, portstop, 'x', 'z', excite=-1, FeedShift=10*resolution, MeasPlaneShift=MSL_length/3, priority=10)
+port[0] = FDTD.AddMSLPort( 1,  pec, portstart, portstop, 'x', 'z', excite=-1, FeedShift=10*resolution, MeasPlaneShift=MSL_length/3, priority=10, Feed_R=50)
 
 portstart = [MSL_length, -MSL_width/2, substrate_thickness]
 portstop  = [0         ,  MSL_width/2, 0]
-port[1] = FDTD.AddMSLPort( 2, pec, portstart, portstop, 'x', 'z', MeasPlaneShift=MSL_length/3, priority=10 )
+port[1] = FDTD.AddMSLPort( 2, pec, portstart, portstop, 'x', 'z', MeasPlaneShift=MSL_length/3, priority=10 , Feed_R=50)
 
 ## PEC Stub Definition in (the XY-plane)
 start = [-MSL_width/2,  MSL_width/2, substrate_thickness]
@@ -153,7 +153,7 @@ os.system(AppCSXCAD_BIN + ' "{}"'.format(CSX_file))
 
 Et = CSX.AddDump('Et', file_type=0, sub_sampling=[2,2,2])
 
-Et.AddBox(subs_start*2, subs_stop*2)
+Et.AddBox(np.array(subs_start)*2, np.array(subs_stop)*2)
 
 # FDTD.Run(Sim_Path, cleanup=True)
 FDTD.Run(Sim_Path, cleanup=True, debug_material=True, debug_pec=True, debug_operator=True, debug_boxes=True, debug_csx=True, verbose=3)
@@ -167,6 +167,9 @@ FDTD.Run(Sim_Path, cleanup=True, debug_material=True, debug_pec=True, debug_oper
 ### Post-processing and plotting
 f = linspace( 1e6, f_max, 1601 )
 for p in port:
+    '''
+    QUESTION: how can there be a reference impedance here when there is no feed impedance specified at the MSL-ports?
+    '''
     p.CalcPort( Sim_Path, f, ref_impedance = 50)
 
 s11 = port[0].uf_ref / port[0].uf_inc
@@ -216,6 +219,12 @@ The main question then becomes, why does a probe need a mode function?
 ANSWER: 
 '''
 
+'''
+QUESTION:
+- Difference between the situation with and without 50 ohm impedance port instead of an infinite impedance port which just absorbs everything (my guess is the BC is absorbing)
+ANSWER: 
+
+'''
 
 '''
 QUESTION:
