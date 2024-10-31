@@ -107,16 +107,24 @@ substrate.AddBox(subs_start, subs_stop )
 ## MSL port setup
 port = [None, None]
 pec = CSX.AddMetal( 'PEC' )
-portstart = [ -MSL_length, -MSL_width/2, substrate_thickness]
-portstop  = [ 0,  MSL_width/2, 0]
 
 # Excited in negative direction
+'''
+NOTE: 
+@param: exc_dir: 'z' -> The excitation direction here is "z", which is the direction of the E-field excitation.
+@param: prop_dir: 'x' -> The propagation direction, which is "x" in this case because the direction of propagation is "x".
+@param: feed-shift: 10 * resolution -> Shift the port from start by a given distance in drawing units (in the propagation direction), default = 0, ONLY works when ExcitePort is set.
+@param: measure plane shift: MSL_length / 3 -> Shifts the measurement plane from start a given distance (in the propagation direction) in drawing units (Default is the midldle of start / stop)
+'''
+portstart = [ -MSL_length, -MSL_width/2, substrate_thickness]
+portstop  = [ 0,  MSL_width/2, 0]
 port[0] = FDTD.AddMSLPort( 1,  pec, portstart, portstop, 'x', 'z', excite=-1, FeedShift=10*resolution, MeasPlaneShift=MSL_length/3, priority=10)
+
 portstart = [MSL_length, -MSL_width/2, substrate_thickness]
 portstop  = [0         ,  MSL_width/2, 0]
 port[1] = FDTD.AddMSLPort( 2, pec, portstart, portstop, 'x', 'z', MeasPlaneShift=MSL_length/3, priority=10 )
 
-## Filter-Stub Definition in (the XY-plane)
+## PEC Stub Definition in (the XY-plane)
 start = [-MSL_width/2,  MSL_width/2, substrate_thickness]
 stop  = [ MSL_width/2,  MSL_width/2+stub_length, substrate_thickness]
 pec.AddBox(start, stop, priority=10 )
@@ -192,6 +200,10 @@ In a stripline the conducting strip is placed between 2 ground planes and dielec
 So the propagation of electric and magnetic fields are entirely transverse to the direction of propagation. (No propagation in the longitudinal direction)
 '''
 
+'''
+NOTE: WHEN VISUALIZING THE ELECTRIC FIELD
+-> Make sure to rightly scale the electric field, so everything doesn't simply turn red whenever a minor electric field passes through.
+'''
 
 '''
 QUESTION:
@@ -207,7 +219,8 @@ ANSWER:
 
 '''
 QUESTION:
-- Why when we actually store the electrical field for the full dielectric do we see a field dump that resembles a single wave swamping the whole dielectric.
--> When we actually only imagine the stub-part or the MSI-part, we see a more clear distinction and reflections
-ANSWER: this is due to the upper value of the field not being high enough, so everything seems high once the initial field passed.
+- How do we calculate the s-parameter values from the in and output voltage and currents? 
+ANSWER: 
+
 '''
+
