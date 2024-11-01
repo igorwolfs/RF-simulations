@@ -20,7 +20,7 @@ from openEMS import openEMS
 APPCSXCAD_CMD = '~/opt/openEMS/bin/AppCSXCAD'
 
 ### Setup the simulation
-Sim_Path = os.path.join(os.getcwd(), 'NotchFilter_50')
+Sim_Path = os.path.join(os.getcwd(), 'portshift')
 
 
 from openEMS.physical_constants import *
@@ -37,7 +37,12 @@ FDTD = openEMS()
 #############################################################################################
 ################################# BOUNDARY CONDITIONS #######################################
 #############################################################################################
-
+'''
+NOTE: Changing boundary conditions
+Something weird happens when changing the PEC boundary conditions to MUR or PML_8 for y2.
+It seems like there's instability happening or something, since the gain increases to a very high number.
+-> Obviously, since the PEC boundary was one Z1, so we assumed no copper plane below the MSL.
+'''
 FDTD.SetBoundaryCond( ['PML_8', 'PML_8', 'MUR', 'MUR', 'PEC', 'MUR'] )
 
 #####################################################################################
@@ -106,6 +111,7 @@ substrate.AddBox(subs_start, subs_stop )
 
 ## MSL port setup
 port = [None, None]
+# TODO: Try changing the resistance of this conductor and see the effect in the simulation.
 pec = CSX.AddMetal( 'PEC' )
 
 # Excited in negative direction
@@ -120,13 +126,19 @@ NOTE:
 
 portstart = [ -MSL_length, -MSL_width/2, substrate_thickness]
 portstop  = [ 0,  MSL_width/2, 0]
-port[0] = FDTD.AddMSLPort( 1,  pec, portstart, portstop, 'x', 'z', excite=-1, FeedShift=10*resolution, MeasPlaneShift=MSL_length/3, priority=10)
+
+# NOTE: The excitation here happens in both directions of the port.
+port[0] = FDTD.AddMSLPort( 1,  pec, portstart, portstop, 'x', 'z', excite=-1, FeedShift=50*resolution, MeasPlaneShift=MSL_length/3, priority=10)
 
 portstart = [MSL_length, -MSL_width/2, substrate_thickness]
 portstop  = [0         ,  MSL_width/2, 0]
 port[1] = FDTD.AddMSLPort( 2, pec, portstart, portstop, 'x', 'z', MeasPlaneShift=MSL_length/3, priority=10, feed_R=50)
 
 ## PEC Stub Definition in (the XY-plane)
+'''
+The wave follows the PEC here, and at the end of the PEC for some reason there is a reflection.
+-> This is probably because the impedance is infinite after the PEC (open circuit) which causes reflections at the end.
+'''
 start = [-MSL_width/2,  MSL_width/2, substrate_thickness]
 stop  = [ MSL_width/2,  MSL_width/2+stub_length, substrate_thickness]
 pec.AddBox(start, stop, priority=10 )

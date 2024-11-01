@@ -95,6 +95,7 @@ Warning: Unused primitive (type: Box) detected in property: excitation!
 start = [plate_x[0], plate_y[0], 0]
 stop  = [plate_x[-1], plate_y[-1], 0]
 
+# Excitation here is added, however no modes no nothing is specified, just "a sinusoidal (voltage?) excitation in the y direction between coords [start, stop]
 csx_excitation = csx.AddExcitation('excitation', 0, [0, 1, 0])
 csx_excitation.AddBox(start, stop)
 
