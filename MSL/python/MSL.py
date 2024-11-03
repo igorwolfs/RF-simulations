@@ -115,10 +115,10 @@ NOTE:
 '''
 
 portstart = [ -MSL_length, -MSL_width/2, substrate_thickness]
-portstop  = [-MSL_length,   MSL_width/2, 0]
+portstop  = [0,   MSL_width/2, 0]
 port[0] = FDTD.AddMSLPort( 1,  pec, portstart, portstop, 'x', 'z', excite=-1, FeedShift=10*resolution, MeasPlaneShift=MSL_length/3, priority=10)
 
-portstart = [MSL_length, -MSL_width/2, substrate_thickness]
+portstart = [0, -MSL_width/2, substrate_thickness]
 portstop  = [MSL_length,   MSL_width/2, 0]
 port[1] = FDTD.AddMSLPort( 2, pec, portstart, portstop, 'x', 'z', MeasPlaneShift=MSL_length/3, priority=10)
 
