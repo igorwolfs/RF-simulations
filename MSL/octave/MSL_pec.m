@@ -48,7 +48,7 @@ FDTD = InitFDTD( max_timesteps, min_decrement );
 %{
 % !NOTE: When putting a PML_8 condition at the point of excitation (y=0), it simply absorbs the excitation wave before it even manages to propagate!
 %}
-BC = {'PML_8' 'PML_8' 'PEC' 'PML_8' 'MUR' 'PML_8'};
+BC = {'PML_8' 'PML_8' 'PEC' 'PML_8' 'PEC' 'PEC'};
 FDTD = SetBoundaryCond( FDTD, BC );
 
 
@@ -85,15 +85,17 @@ CSX = DefineRectGrid( CSX, unit, mesh );
 
 %% create MSL
 % attention! the skin effect is not simulated, because the MSL is discretized with only one cell!
-
-CSX = AddMaterial( CSX, 'copper' );
 %{
-Kappa: is the inverse of electrical resistivtiy = electrical conductivity.
-The unit of Kappa is siemens per meter (S/m), it is infinity for a PEC.
-- A higher conductivity means MORE current for a given electric field.
-- Because of that the fields will be LARGER and more confined to the conductor.
+% ! USING A PEC
+When using a PEC here as waveguide, the conductivity is infinite.
+Because of this, there is no current running through the inductor, the electric field is 0 on the surface and inside of it.
+AND the fields stay outside of the conductor itself.
+% ! USING A NON-IDEAL CONDUCTOR
+A non-ideal conductor has an electric field inside the conductor which in turn produces a current which produces a magnetic field.
+The equations governing the magnetic and electric fields in and around the conductor say that there is an exponential decay of the fields to the inside of the conductor due to the skin effect.
+Because of this the electric fields are restricted to the surface region of the conductor, which is indeed what we see in a non-ideal conductor.
 %}
-CSX = SetMaterialProperty( CSX, 'copper', 'Kappa', 56e6 );
+CSX = AddMaterial( CSX, 'PEC' );
 
 %{
 Height: (y-dir): 1e-3
@@ -104,7 +106,7 @@ Length: (z-dir): 600 mm
 start = [-MSL_width/2, MSL_height,   0];
 stop  = [ MSL_width/2, MSL_height+1, length];
 priority = 100; % the geometric priority is set to 100
-CSX = AddBox( CSX, 'copper', priority, start, stop );
+CSX = AddBox( CSX, 'PEC', priority, start, stop );
 
 %% add excitation below the strip
 start = [-MSL_width/2, 0         , mesh.z(1)];

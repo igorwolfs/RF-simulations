@@ -20,7 +20,7 @@ from openEMS import openEMS
 APPCSXCAD_CMD = '~/opt/openEMS/bin/AppCSXCAD'
 
 ### Setup the simulation
-Sim_Path = os.path.join(os.getcwd(), 'portshift')
+Sim_Path = os.path.join(os.getcwd(), 'MSL_cu')
 
 
 from openEMS.physical_constants import *
@@ -37,12 +37,7 @@ FDTD = openEMS()
 #############################################################################################
 ################################# BOUNDARY CONDITIONS #######################################
 #############################################################################################
-'''
-NOTE: Changing boundary conditions
-Something weird happens when changing the PEC boundary conditions to MUR or PML_8 for y2.
-It seems like there's instability happening or something, since the gain increases to a very high number.
--> Obviously, since the PEC boundary was one Z1, so we assumed no copper plane below the MSL.
-'''
+
 FDTD.SetBoundaryCond( ['PML_8', 'PML_8', 'MUR', 'MUR', 'PEC', 'MUR'] )
 
 #####################################################################################
@@ -58,7 +53,6 @@ MSL_width = 600 # 0.6 mm
 ### Substrate dimensions
 substrate_thickness = 254
 substrate_epr = 3.66
-stub_length = 15e3 # 12 mm
 
 ### Setup Geometry & Mesh
 CSX = ContinuousStructure()
@@ -89,9 +83,6 @@ mesh.AddLine('y',  MSL_width/2+third_mesh)
 mesh.AddLine('y', -MSL_width/2-third_mesh)
 mesh.SmoothMeshLines('y', resolution/4)
 
-mesh.AddLine('y', [-15*MSL_width, 15*MSL_width+stub_length])
-mesh.AddLine('y', (MSL_width/2+stub_length)+third_mesh)
-mesh.SmoothMeshLines('y', resolution)
 
 # Create 5 points from 0 to substrate_thickness
 mesh.AddLine('z', linspace(0,substrate_thickness,5))
@@ -106,14 +97,15 @@ mesh.SmoothMeshLines('z', resolution)
 # Default mu and ps: 1 (probably, vacuum)
 substrate = CSX.AddMaterial( 'RO4350B', epsilon=substrate_epr)
 subs_start = [-MSL_length, -15*MSL_width, 0]
-subs_stop  = [+MSL_length, +15*MSL_width+stub_length, substrate_thickness]
+subs_stop  = [+MSL_length, +15*MSL_width, substrate_thickness]
 substrate.AddBox(subs_start, subs_stop )
 
 ## MSL port setup
 port = [None, None]
-# TODO: Try changing the resistance of this conductor and see the effect in the simulation.
-pec = CSX.AddMetal( 'PEC' )
-
+cu = CSX.AddMetal( 'copper')
+value = cu.GetConductivity()
+print(f"Value: {value}")
+cu.GetMaterialProperty("epsilon")#56e6, prop_name = "kappa")
 # Excited in negative direction
 '''
 NOTE: 
@@ -125,24 +117,12 @@ NOTE:
 '''
 
 portstart = [ -MSL_length, -MSL_width/2, substrate_thickness]
-portstop  = [ 0,  MSL_width/2, 0]
-
-# NOTE: The excitation here happens in both directions of the port.
-port[0] = FDTD.AddMSLPort( 1,  pec, portstart, portstop, 'x', 'z', excite=-1, FeedShift=50*resolution, MeasPlaneShift=MSL_length/3, priority=10)
+portstop  = [-MSL_length,   MSL_width/2, 0]
+port[0] = FDTD.AddMSLPort( 1,  cu, portstart, portstop, 'x', 'z', excite=-1, FeedShift=10*resolution, MeasPlaneShift=MSL_length/3, priority=10)
 
 portstart = [MSL_length, -MSL_width/2, substrate_thickness]
-portstop  = [0         ,  MSL_width/2, 0]
-port[1] = FDTD.AddMSLPort( 2, pec, portstart, portstop, 'x', 'z', MeasPlaneShift=MSL_length/3, priority=10, feed_R=50)
-
-## PEC Stub Definition in (the XY-plane)
-'''
-The wave follows the PEC here, and at the end of the PEC for some reason there is a reflection.
--> This is probably because the impedance is infinite after the PEC (open circuit) which causes reflections at the end.
-'''
-start = [-MSL_width/2,  MSL_width/2, substrate_thickness]
-stop  = [ MSL_width/2,  MSL_width/2+stub_length, substrate_thickness]
-pec.AddBox(start, stop, priority=10 )
-
+portstop  = [MSL_length,   MSL_width/2, 0]
+port[1] = FDTD.AddMSLPort( 2, cu, portstart, portstop, 'x', 'z', MeasPlaneShift=MSL_length/3, priority=10)
 
 ####################################################################################
 ################################# EXCITATION #######################################
@@ -181,10 +161,19 @@ FDTD.Run(Sim_Path, cleanup=True, debug_material=True, debug_pec=True, debug_oper
 ### Post-processing and plotting
 f = linspace( 1e6, f_max, 1601 )
 for p in port:
-    '''
-    QUESTION: how can there be a reference impedance here when there is no feed impedance specified at the MSL-ports?
-    '''
     p.CalcPort( Sim_Path, f, ref_impedance = 50)
+
+'''
+S-parameters calculated to a reference impedance of 50 ohms.
+- S11: reflected / incoming voltage to port 0
+- S21: reflected voltage at port 1 (so b2) / incoming voltage at port 0 (There is no excitation at port 1) 
+b1 = S11 * a1 + S21 * a2 -> S11 = b1 / a1 (fraction of power reflected at port 1)
+b2 = S22 * a2 + S12 * a1 -> S12 = b2 / a1 (fraction of power transferred from port 2 to port 1)
+-> NOTE: S-matrix is symmetric (S21 = S12) only if
+- reference impedances are real
+- elements contain only reciprocal materials
+https://cds.cern.ch/record/1415639/files/p67.pdf
+'''
 
 s11 = port[0].uf_ref / port[0].uf_inc
 s21 = port[1].uf_ref / port[0].uf_inc
@@ -205,62 +194,6 @@ show()
 #######################################################################################
 
 '''
-#! QUASI-TEM mode for MSL: 
-An MSL does NOT support "True" TEM mode, since the electromagnetic field exists 
-- in dielectric below
-- in air above
-So there will be a small longitudinal component in both electric and magnetic fields (called quasi-TEM mode)
--> The higher the frequency, the higher the effect.
-However at lower frequencies 
-#! TEM mode in stripline
-In a stripline the conducting strip is placed between 2 ground planes and dielectric, which enclose the electric and magnetic fields.
-So the propagation of electric and magnetic fields are entirely transverse to the direction of propagation. (No propagation in the longitudinal direction)
-'''
-
-'''
-NOTE: WHEN VISUALIZING THE ELECTRIC FIELD
--> Make sure to rightly scale the electric field, so everything doesn't simply turn red whenever a minor electric field passes through.
-NOTE: EXCITED VS NON EXCITED PORT MODE FUNCTION
-- An excited port has an excitation defined in the csxcad file.
-HOWEVER: the relevant mode-function is added to all relevant probes (in this case an I and U-probe)
-- i_probe = CSX.AddProbe(self.I_filenames[0], p_type=11, weight=self.direction, mode_function=self.H_func)
-- u_probe = CSX.AddProbe(self.U_filenames[0], p_type=10, mode_function=self.E_func)
-at all times, so the amplitude you in fact receive is the probe type you want to measure, weighted by the E-field function to get the amplitude for that specific mode!
-NOTE: STUB Reflections
-'''
-
-'''
-QUESTION:
-- How do we calculate the s-parameter values from the in and output voltage and currents? 
-ANSWER:
-'''
-
-'''
-QUESTION:
-- Why does the reflection has its lowest point at 5.5 GHz
-ANSWER:
-- The load impedance here is 50 Hz
-- The impedance of the trace is ..
-- The load impedance being equal to the trace impedance probably happens at that frequency, which creates a minimum in the reflection coefficient.
-'''
-
-
-'''
-QUESTION:
-- Why don't we see a difference between the different port impedance cases?
-- One would expect a different electric field value depending on the port impedance.
--> Note that we are not plotting the current, what we are plotting is the electric field. HOWEVER: it's propagation is influenced by the resistance of the material so this does make sense.
-
-MY GUESS:
-When we are actually talking about a voltage signal / electric field excitation applied to a certain port
-- We need to have the correct feed impedance of 50 ohms
-- We need to have the correct load impedance of 50 ohms
-HOWEVER:
-- You do assume that the resistance is infinite
--> So the question becomes: 
-The load impedance matters because that's here the wave propagates to, HOWEVER:
--> why does the source impedance really matter? Is it only for the point of reflections?
--> if the source impedance is infinite, and another one isn't, won't you get HUGE reflections since your reflection coefficient gets fucked?
--> If not, there is must be an absorptive boundary condition?
--> Check if the excitation is in fact an E-field and not a voltage.
+QUESTION 1:
+- Why are the field values NaN here? Is it because there is no impedance?
 '''
