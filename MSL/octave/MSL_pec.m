@@ -1,3 +1,18 @@
+#######################################################################################
+##################################### INTRO ###########################################
+#######################################################################################
+
+%{
+%! INTRODUCTION
+This example contains an excitation, as well as voltage and current probes at the start of the excitation.
+The point of this example is to calculate the characteristic impedance of the MSL and compare it to the formula which was pasted all the way down.
+
+%! MAIN TODO
+Try to make a similar code construction with 2 ports instead of probes on one side and the other.
+%}
+
+
+
 #############################################################################################
 ##################################### PATHS ADDED ###########################################
 #############################################################################################

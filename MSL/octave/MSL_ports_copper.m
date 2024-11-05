@@ -1,3 +1,18 @@
+#######################################################################################
+##################################### INTRO ###########################################
+#######################################################################################
+
+%{
+%! INTRODUCTION
+This example contains an excitation, created in order to measure the current and voltage at both start and end of the port.
+This allows us to calculate the S-parameters.
+
+%! MAIN TODO
+A PEC is used here. The question however is why the fields are so limited to the PEC itself, and not spreading out more as they would normally do with a PEC.
+%}
+
+
+
 #############################################################################################
 ##################################### PATHS ADDED ###########################################
 #############################################################################################
@@ -63,30 +78,39 @@ stop  = [mesh.x(end), mesh.y(end), substrate_thickness];
 CSX = AddBox( CSX, 'RO4350B', 0, start, stop );
 
 %% MSL port
-CSX = AddMetal( CSX, 'PEC' );
+CSX = AddMaterial( CSX, 'copper' );
+CSX = SetMaterialProperty( CSX, 'copper', 'Kappa', 56e6 );
+
 portstart = [ mesh.x(1), -MSL_width/2, substrate_thickness];
 portstop  = [ 0,  MSL_width/2, 0];
+display("MSL_port excite");
+display(portstart);
+display(portstop);
 
 # Excitation vector [0, 0, -1]
-[CSX,port{1}] = AddMSLPort( CSX, 999, 1, 'PEC', portstart, portstop, 0, [0 0 -1], 'ExcitePort', true, 'FeedShift', 10*resolution, 'MeasPlaneShift',  MSL_length/3);
+[CSX,port{1}] = AddMSLPort( CSX, 999, 1, 'copper', portstart, portstop, 0, [0 0 -1], 'ExcitePort', true, 'FeedShift', 5*resolution, 'MeasPlaneShift',  MSL_length/3);
 portstart = [mesh.x(end), -MSL_width/2, substrate_thickness];
 portstop  = [0          ,  MSL_width/2, 0];
 
+display("MSL_port normal");
+display(portstart);
+display(portstop);
+
 # Excitation vector [0, 0, -1]
-[CSX,port{2}] = AddMSLPort( CSX, 999, 2, 'PEC', portstart, portstop, 0, [0 0 -1], 'MeasPlaneShift',  MSL_length/3 );
+[CSX,port{2}] = AddMSLPort( CSX, 999, 2, 'copper', portstart, portstop, 0, [0 0 -1], 'MeasPlaneShift',  MSL_length/3 );
 
 %% Filter-stub
 start = [-MSL_width/2,  MSL_width/2, substrate_thickness];
 stop  = [ MSL_width/2,  MSL_width/2, substrate_thickness];
-CSX = AddBox( CSX, 'PEC', 999, start, stop );
+CSX = AddBox( CSX, 'copper', 999, start, stop );
  
 
 ####################################################################################
 #################################### DUMPS #########################################
 ####################################################################################
 
-start = [mesh.x(1) mesh.y(1) -450];
-stop = [mesh.x(end) mesh.y(end) 450];
+start = [mesh.x(1) mesh.y(1) mesh.z(1)];
+stop = [mesh.x(end) mesh.y(end) mesh.z(end)];
 
 CSX = AddDump(CSX,'Et','DumpMode',0);
 CSX = AddBox(CSX,'Et',0, start, stop);   
