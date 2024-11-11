@@ -8,6 +8,9 @@ Make sure to vary tests for
 - Effect of trace parameters on S-parameters.
 - Effect of different ports, meaning of different ports.
 
+### MSL PCB trace
+Check whether you can just use a short port trace
+
 ## Advanced PCB traces
 - Simulate bending PCB traces.
 - Simulate PCB trace with via's.
