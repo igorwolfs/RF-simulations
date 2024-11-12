@@ -42,9 +42,9 @@ clc
 
 physical_constants;
 unit = 1e-6; % specify everything in um
-MSL_dz = 36; % thickness
-MSL_dy = 500; % trace width
-MSL_dx = 200e3 % 500 mm
+MSL_dz = 36;  % thickness
+MSL_dy = 500;  % trace width
+MSL_dx = 200e3  % 500 mm
 
 port1_dx = 10e3;
 port1_exc_dx = 5e3;
@@ -63,7 +63,9 @@ wavelength_u = wavelength / unit;
 ###################################### INITIALIZE FDTD ########################################
 ###############################################################################################
 
-FDTD = InitFDTD();
+max_timesteps = 300000;
+
+FDTD = InitFDTD(max_timesteps);
 
 #############################################################################################
 ################################# BOUNDARY CONDITIONS #######################################
@@ -71,12 +73,12 @@ FDTD = InitFDTD();
 
 
 # CLOSE OFF TOP WITH MUR (AIR) BOTTOM WITH PEC (MSL)
-SIM_BOX = [-MSL_dx/2, MSL_dx/2, -MSL_dy*10, MSL_dy*10, -substrate_thickness, 0];
+SIM_BOX = [-MSL_dx/2, MSL_dx/2, -MSL_dy*5, MSL_dy*5, -substrate_thickness, 0];
 display("---- SIM_BOX ----");
 display(SIM_BOX)
 display("---- SIM_BOX ----");
 
-BC   = {'PML_8' 'PML_8' 'MUR' 'MUR' 'PEC' 'PML_8'};
+BC   = {'PML_8' 'PML_8' 'PML_8' 'PML_8' 'PEC' 'PML_8'};
 FDTD = SetBoundaryCond( FDTD, BC );
 
 ####################################################################################
@@ -113,11 +115,11 @@ mesh.z = [SIM_BOX(5) SIM_BOX(6)];
 % Resolution
 display("---- SUBSTRATE ----");
 
-resolution_x = wavelength / 20;
+resolution_x = wavelength / 50;
 resolution_u_x = resolution_x / unit;
-resolution_y = wavelength / 20;
+resolution_y = wavelength / 50;
 resolution_u_y = resolution_y / unit;
-resolution_z = wavelength / 30;
+resolution_z = wavelength / 50;
 resolution_u_z = resolution_z / unit;
 
 printf("Resolution: %.2f, %.2f, %.2f\r\n", resolution_x, resolution_y, resolution_z);
@@ -159,10 +161,10 @@ port1stop  = [-MSL_dx/2+port1_dx,  MSL_dy/2,  MSL_dz];
 
 
 
-mesh.x = [linspace(port1start(1)+port1_exc_dx-300, port1start(1)+port1_exc_dx+300, 21) mesh.x];
-mesh.x = [linspace(port1start(1)+port1_meas_dx-300, port1start(1)+port1_meas_dx+300, 21) mesh.x];
+% mesh.x = [linspace(port1start(1)+port1_exc_dx-300, port1start(1)+port1_exc_dx+300, 11) mesh.x];
+% mesh.x = [linspace(port1start(1)+port1_meas_dx-300, port1start(1)+port1_meas_dx+300, 11) mesh.x];
 
-mesh.y = [linspace(port1start(2)*(3/2), port1stop(2)*(3/2), 11) mesh.y];
+mesh.y = [linspace(port1start(2)*(3/2), port1stop(2)*(3/2), 6) mesh.y];
 mesh.z = [linspace(port1start(3)*(3/2), port1stop(3)*(3/2), 6) mesh.z];
 
 display("Adding grids for port:");
@@ -184,7 +186,7 @@ display("---- PORT2 ----");
 port2start = [(MSL_dx/2),          -MSL_dy/2, 0];
 port2stop  = [(MSL_dx/2)-port2_dx,  MSL_dy/2,  MSL_dz];
 
-mesh.x = [linspace(port2start(1)-port2_meas_dx-300, port2start(1)-port2_meas_dx+300, 21) mesh.x];
+% mesh.x = [linspace(port2start(1)-port2_meas_dx-300, port2start(1)-port2_meas_dx+300, 21) mesh.x];
 
 display("port2 start stop");
 display(port2start);
@@ -224,7 +226,7 @@ Sim_CSX = strcat([mfilename '.xml']);
 
 WriteOpenEMS( [mfilename '/' Sim_CSX], FDTD, CSX );
 CSXGeomPlot( [mfilename '/' Sim_CSX] );
-RunOpenEMS( mfilename, Sim_CSX );
+RunOpenEMS( mfilename, Sim_CSX, '--debug-material', true, '--debug-PEC', true, '--debug-operator', true, '--debug-boxes', true, '--debug-CSX', true);
 
 #######################################################################################
 #################################### PLOTTING #########################################
@@ -258,10 +260,17 @@ print (hf, pdf_filepath, "-dpdf");
 %{
 %! GRID CREATION
 Make sure that the grid around the excitation source is small enough, so the excitation propagates well.
-Also make sure the excitation mesh there is equidistant
+Also make sure the excitation mesh there is equidistant 
 
 %! QUCS SIMULATOR RF OPENEMS PLUGIN
 https://github.com/thomaslepoix/Qucs-RFlayout/blob/master/doc/tutorials/openems.md
 Gives tips on how meshes are generated with QUCS
 These filters can then also be turned into kicad footprints
+%}
+
+
+%{
+The power keeps going up here until it reaches infinity. 
+This is NOT due to the grid-size in the x-direction. We removed this and the result is still infinity.
+% * TRY TO MAKE THE DIELECTRIC LOSSY
 %}
