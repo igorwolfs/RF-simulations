@@ -46,6 +46,14 @@ MSL_dz = 36;  % thickness
 MSL_dy = 500;  % trace width
 MSL_dx = 200e3  % 500 mm
 
+%{
+port1_dx = 50e3;
+port1_exc_dx = 20e3;
+port1_meas_dx = 30e3;
+port2_dx = 50e3;10e3
+port2_meas_dx = 30e3;
+%}
+
 port1_dx = 10e3;
 port1_exc_dx = 5e3;
 port1_meas_dx = 8e3;
@@ -63,7 +71,7 @@ wavelength_u = wavelength / unit;
 ###################################### INITIALIZE FDTD ########################################
 ###############################################################################################
 
-max_timesteps = 300000;
+max_timesteps = 900000;
 
 FDTD = InitFDTD(max_timesteps);
 
@@ -115,11 +123,11 @@ mesh.z = [SIM_BOX(5) SIM_BOX(6)];
 % Resolution
 display("---- SUBSTRATE ----");
 
-resolution_x = wavelength / 50;
+resolution_x = wavelength / 20;
 resolution_u_x = resolution_x / unit;
-resolution_y = wavelength / 50;
+resolution_y = wavelength / 30;
 resolution_u_y = resolution_y / unit;
-resolution_z = wavelength / 50;
+resolution_z = wavelength / 20;
 resolution_u_z = resolution_z / unit;
 
 printf("Resolution: %.2f, %.2f, %.2f\r\n", resolution_x, resolution_y, resolution_z);
@@ -146,7 +154,7 @@ priority = 100;
 conductorbox_start =  [-MSL_dx/2, -MSL_dy/2, -MSL_dz];
 conductorbox_end    = [ MSL_dx/2,  MSL_dy/2,  0];
 CSX = AddBox( CSX, 'PEC', priority, conductorbox_start, conductorbox_end );
-mesh.z = [linspace(conductorbox_start(3), conductorbox_end(3), 6) mesh.z];
+% mesh.z = [linspace(conductorbox_start(3), conductorbox_end(3), 6) mesh.z];
 
 %%%%%%% PORTS %%%%%%%%%
 # ACTUALLY DEFINE MESH HERE
@@ -161,8 +169,8 @@ port1stop  = [-MSL_dx/2+port1_dx,  MSL_dy/2,  MSL_dz];
 
 
 
-% mesh.x = [linspace(port1start(1)+port1_exc_dx-300, port1start(1)+port1_exc_dx+300, 11) mesh.x];
-% mesh.x = [linspace(port1start(1)+port1_meas_dx-300, port1start(1)+port1_meas_dx+300, 11) mesh.x];
+mesh.x = [linspace(port1start(1)+port1_exc_dx-300, port1start(1)+port1_exc_dx+300, 11) mesh.x];
+mesh.x = [linspace(port1start(1)+port1_meas_dx-300, port1start(1)+port1_meas_dx+300, 11) mesh.x];
 
 mesh.y = [linspace(port1start(2)*(3/2), port1stop(2)*(3/2), 6) mesh.y];
 mesh.z = [linspace(port1start(3)*(3/2), port1stop(3)*(3/2), 6) mesh.z];
@@ -186,7 +194,7 @@ display("---- PORT2 ----");
 port2start = [(MSL_dx/2),          -MSL_dy/2, 0];
 port2stop  = [(MSL_dx/2)-port2_dx,  MSL_dy/2,  MSL_dz];
 
-% mesh.x = [linspace(port2start(1)-port2_meas_dx-300, port2start(1)-port2_meas_dx+300, 21) mesh.x];
+mesh.x = [linspace(port2start(1)-port2_meas_dx-300, port2start(1)-port2_meas_dx+300, 21) mesh.x];
 
 display("port2 start stop");
 display(port2start);
@@ -271,6 +279,5 @@ These filters can then also be turned into kicad footprints
 
 %{
 The power keeps going up here until it reaches infinity. 
-This is NOT due to the grid-size in the x-direction. We removed this and the result is still infinity.
-% * TRY TO MAKE THE DIELECTRIC LOSSY
+-> The main reason seemed to be the closeness to the 
 %}
