@@ -60,7 +60,8 @@ FDTD.SetCSX(CSX)
 #######################################################################################################################################
 # BOUNDARY CONDITIONS
 #######################################################################################################################################
-FDTD.SetBoundaryCond( ['PML_8', 'PML_8', 'MUR', 'MUR', 'PEC', 'MUR'] )
+# FDTD.SetBoundaryCond( ['MUR', 'MUR', 'MUR', 'MUR', 'PEC', 'MUR'] )
+FDTD.SetBoundaryCond( ['PEC', 'PEC', 'PEC', 'PEC', 'PEC', 'PEC'] )
 
 #######################################################################################################################################
 # COORDINATE SYSTEM
@@ -89,8 +90,9 @@ materialList = {}
 
 
 ## MATERIAL - COPPER
-materialList['copper'] = CSX.AddMaterial('copper')
-materialList['copper'].SetMaterialProperty(epsilon=1.0, mue=1.0, kappa=56e6, sigma=0.0)
+# materialList['copper'] = CSX.AddMaterial('copper')
+# materialList['copper'].SetMaterialProperty(epsilon=1.0, mue=1.0, kappa=56e6, sigma=0.0)
+materialList['copper'] = CSX.AddMetal('copper')
 
 MSL_dz = 36;  # thickness
 MSL_dy = 500;  # trace width
@@ -114,16 +116,17 @@ materialList['air'] = CSX.AddMaterial('air')
 materialList['air'].SetMaterialProperty(epsilon=1.0, mue=1.0, kappa=0.0, sigma=0.0)
 
 # Only subtract lambda / 4 in case there's no PEC
-air_start = [substrate_start[0] - wavelength_max_u / 8, substrate_start[1] - wavelength_max_u / 8, 0]
+air_start = [substrate_start[0], substrate_start[1], 0]
 # safety of lambda/4 from edge absorption condition
-air_stop = [substrate_stop[0] + wavelength_max_u / 8, substrate_stop[1] + wavelength_max_u / 8, wavelength_max_u / 8]
+air_stop = [substrate_stop[0], substrate_stop[1], substrate_thickness]
 materialList['air'].AddBox(air_start, air_stop )
 
 #######################################################################################################################################
 # Geometry and Grid
 #######################################################################################################################################
-SIMBOX_START = np.array([air_start[0], air_start[1], -substrate_thickness])
-SIMBOX_STOP = np.array([air_stop[0], air_stop[1], air_stop[2]])
+SIMBOX_START = np.array([substrate_start[0], air_start[1], -substrate_thickness])
+SIMBOX_STOP = np.array([substrate_stop[0], air_stop[1], air_stop[2]])
+
 ## MAIN GRID
 wavelength = (C0/f_max) *  (1/(sqrt(substrate_epr)))
 wavelength_u = wavelength / unit
@@ -142,16 +145,18 @@ print(f"mesh_y: {mesh.y}")
 print(f"mesh_z: {mesh.z}")
 
 ## COPPER GRID
-print(f"argwhere_y: {np.argwhere((mesh.y <= -MSL_dy/2) & (mesh.y >= MSL_dy/2))}")
-print(f"argwhere_z: {np.argwhere((mesh.z >= -MSL_dz) & (mesh.z <= 0))}")
-
+# * y-copper plane
 mesh.y = np.delete(mesh.y, np.argwhere((mesh.y <= -MSL_dy/2) & (mesh.y >= MSL_dy/2)))
-mesh.y = np.concatenate((mesh.y, np.array([-MSL_dy/2, MSL_dy/2, 0])))
-mesh.z = np.delete(mesh.z, np.argwhere((mesh.z >= -MSL_dz) & (mesh.z <= 0)))
-mesh.z = np.concatenate((mesh.z, np.array([-MSL_dz, -MSL_dz / 2, 0])))
+# Make sure to have a mesh 1/3rd inside and 2-3rds outside of your conductor mesh
+mesh.y = np.concatenate((mesh.y, np.array([-MSL_dy*5/3, -MSL_dy*2/3, MSL_dy/3, MSL_dy*5/3])))
+
+# * z-copper plane
+mesh.z = np.delete(mesh.z, np.argwhere((mesh.z >= -MSL_dz*5/3) & (mesh.z <= 2*MSL_dz/3)))
+# Make sure to have a mesh 1/3rd inside and 2-3rds outside of your conductor mesh
+mesh.z = np.concatenate((mesh.z, np.array([-MSL_dz*5/3, -2*MSL_dz/3, -MSL_dz / 3, 2*MSL_dz/3])))
 
 ## DIELECTRIC GRID
-
+mesh.z = np.concatenate((mesh.z, np.array([60.0, 120.0, 200, 300])))
 
 
 ####################################################################################
@@ -173,14 +178,14 @@ port1_dx = 50e3
 port1_exc_dx = 30e3
 port1_meas_dx = 40e3
 port1start = [-MSL_dx/2,          -MSL_dy/2,  substrate_start[2]]
-port1stop  = [-MSL_dx/2+port1_dx,  MSL_dy/2,  substrate_stop[2]]
+port1stop  = [-MSL_dx/2+port1_dx,  MSL_dy/2,  substrate_stop[2]/2]
 mesh.x = np.concatenate((mesh.x, np.array([-MSL_dx/2+port1_exc_dx, -MSL_dx/2+port1_meas_dx])))
 print(f"port: X: ({port1start[0]:.2e}->{port1stop[0]:.2e}), Y:({port1start[1]:.2e}->{port1stop[1]:.2e}), Z:({port1start[2]:.2e}->{port1stop[2]:.2e})")
 
 port2_dx = 50e3
 port2_meas_dx = 40e3
 port2start = [(MSL_dx/2),          -MSL_dy/2, substrate_start[2]]
-port2stop  = [(MSL_dx/2)-port2_dx,  MSL_dy/2,  substrate_stop[2]]
+port2stop  = [(MSL_dx/2)-port2_dx,  MSL_dy/2,  substrate_stop[2]/2]
 print(f"port: X: ({port2start[0]:.2e}->{port2stop[0]:.2e}), Y:({port2start[1]:.2e}->{port2stop[1]:.2e}), Z:({port2start[2]:.2e}->{port2stop[2]:.2e})")
 mesh.x = np.concatenate((mesh.x, np.array([MSL_dx/2-port2_meas_dx])))
 
@@ -204,12 +209,12 @@ from CSXCAD.SmoothMeshLines import SmoothMeshLines
 
 print("BEFORE")
 print(f"X_Meshlines: {openEMS_grid.GetLines(0)}")
-print(f"Y_Meshlines: {openEMS_grid.GetLines(0)}")
-print(f"Z_Meshlines: {openEMS_grid.GetLines(0)}")
+print(f"Y_Meshlines: {openEMS_grid.GetLines(1)}")
+print(f"Z_Meshlines: {openEMS_grid.GetLines(2)}")
 
-openEMS_grid.SmoothMeshLines(0, resolution_u_xyz[0], 1.7)
-openEMS_grid.SmoothMeshLines(1, resolution_u_xyz[1], 1.7)
-openEMS_grid.SmoothMeshLines(2, resolution_u_xyz[2], 1.7)
+openEMS_grid.SmoothMeshLines(0, resolution_u_xyz[0]/10, 1.1)
+openEMS_grid.SmoothMeshLines(1, resolution_u_xyz[1]/10, 1.1)
+openEMS_grid.SmoothMeshLines(2, resolution_u_xyz[2]/10, 1.1)
 
 print("AFTER")
 print(f"X_Meshlines: {openEMS_grid.GetLines(0)}")
@@ -241,7 +246,7 @@ os.system(AppCSXCAD_BIN + ' "{}"'.format(CSX_file))
 #################################### DUMPS #########################################
 ####################################################################################
 
-Et = CSX.AddDump('Et', file_type=0, sub_sampling=[2,2,2])
+Et = CSX.AddDump('Et', file_type=0)
 Et.AddBox(SIMBOX_START, SIMBOX_STOP)
 
 # FDTD.Run(Sim_Path, cleanup=True)
@@ -296,4 +301,21 @@ MESH CREATION FOR CONDUCTORS
 	- Create a function that logarithmically (with a factor of n), reduces the grid size from a to b
 4. We need to do the same on the other side of the conductor, above, and below the conductor
 -> CHeck why SmoothMeshLines doesn't do the job as it is supposed to.
+'''
+
+'''
+INSTABILITY IN SIMULATIONS
+Q?
+Maybe the fact that the excitation keeps going has to do with the fact that we have 2 unused primitives?
+
+Most instabilities are due to one of 2 things
+### 1. Boundary condition problem
+To check whether this is the problem, set all boundary conditions to metal. This should get rid of the boundary condition (PML) instability.
+In this case there is still a weird energy contained in the conductor for some reason, no idea why.
+The reason for this is (probably)? the PEC
+
+### 2. Timestep instability problem
+Here you can reduce the courant number.
+### SOURCES
+https://optics.ansys.com/hc/en-us/articles/11277217507603-Troubleshooting-diverging-simulations-in-FDTD
 '''
