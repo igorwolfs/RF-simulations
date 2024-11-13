@@ -9,6 +9,19 @@
  (c) 2016-2023 Thorsten Liebig <thorsten.liebig@gmx.de>
 
 """
+#
+# FUNCTION TO GIVE RANGE WITH ENDPOINT INCLUDED arangeWithEndpoint(0,10,2.5) = [0, 2.5, 5, 7.5, 10]
+#     returns coordinates in order [theta, r, z]
+#
+def arangeWithEndpoint(start, stop, step=1, endpoint=True):
+	if start == stop:
+		return [start]
+
+	arr = np.arange(start, stop, step)
+	if endpoint and arr[-1] + step == stop:
+		arr = np.concatenate([arr, [stop]])
+	return arr
+
 
 ### Import Libraries
 import os, tempfile
@@ -28,7 +41,7 @@ unit = 1e-6 # specify everything in um
 
 ## prepare simulation folder
 currDir = os.getcwd()
-Sim_Path = os.path.join(currDir, 'MSL_copper')
+Sim_Path = os.path.join(currDir, 'MSL_ports_copper_exc')
 Sim_CSX = 'MSL_copper.xml'
 if os.path.exists(Sim_Path):
 	shutil.rmtree(Sim_Path)   # clear previous directory
@@ -36,7 +49,7 @@ if os.path.exists(Sim_Path):
      
 
 ## setup FDTD parameter & excitation function
-max_timesteps = 100000
+max_timesteps = 600000
 min_decrement = 1e-5
 
 CSX = ContinuousStructure()
@@ -52,22 +65,21 @@ FDTD.SetBoundaryCond( ['PML_8', 'PML_8', 'MUR', 'MUR', 'PEC', 'MUR'] )
 #######################################################################################################################################
 # COORDINATE SYSTEM
 #######################################################################################################################################
+def mesh():
+	x,y,z
 
-mesh = CSX.GetGrid()
-mesh.SetDeltaUnit(unit)
-# mesh_x = np.array([])
-# mesh_y = np.array([])
-# mesh_z = np.array([])
-
-
+openEMS_grid = CSX.GetGrid()
+openEMS_grid.SetDeltaUnit(unit)
+mesh.x = np.array([])
+mesh.y = np.array([])
+mesh.z = np.array([])
 
 #######################################################################################################################################
 # EXCITATION sinewave
 #######################################################################################################################################
 f_max = 7e9
-safety = 2
-wavelength_max = (C0/f_max) * safety
-
+wavelength_max = (C0/f_max)
+wavelength_max_u = wavelength_max / unit
 FDTD.SetGaussExcite( f_max/2, f_max/2 )
 
 #######################################################################################################################################
@@ -83,6 +95,9 @@ materialList['copper'].SetMaterialProperty(epsilon=1.0, mue=1.0, kappa=56e6, sig
 MSL_dz = 36;  # thickness
 MSL_dy = 500;  # trace width
 MSL_dx = 200e3  # 500 mm
+pec_start = [-MSL_dx/2, -MSL_dy/2, -MSL_dz]
+pec_end = [MSL_dx/2, MSL_dy/2, 0]
+materialList['copper'].AddBox(pec_start, pec_end)
 
 ## MATERIAL - FR4
 materialList['FR4'] = CSX.AddMaterial('FR4')
@@ -90,39 +105,50 @@ substrate_epr = 4.6
 materialList['FR4'].SetMaterialProperty(epsilon=4.6, mue=1.0, kappa=0.0, sigma=0.0)
 substrate_thickness = 1.6e3 # 1.6 mm
 
-substrate_start = [-MSL_dx, -2*MSL_dy, 0]
-substrate_stop  = [MSL_dx, 2*MSL_dy, -substrate_thickness]
+substrate_start = [-MSL_dx/2, -4*MSL_dy, 0]
+substrate_stop  = [MSL_dx/2, 4*MSL_dy, -substrate_thickness]
 materialList['FR4'].AddBox(substrate_start, substrate_stop )
 
 ## MATERIAL - AIR
 materialList['air'] = CSX.AddMaterial('air')
 materialList['air'].SetMaterialProperty(epsilon=1.0, mue=1.0, kappa=0.0, sigma=0.0)
 
-air_start = copy.deepcopy(substrate_start)
+# Only subtract lambda / 4 in case there's no PEC
+air_start = [substrate_start[0] - wavelength_max_u / 8, substrate_start[1] - wavelength_max_u / 8, 0]
 # safety of lambda/4 from edge absorption condition
-air_stop = copy.deepcopy(substrate_stop)
-air_stop[2] = wavelength_max/4
+air_stop = [substrate_stop[0] + wavelength_max_u / 8, substrate_stop[1] + wavelength_max_u / 8, wavelength_max_u / 8]
+materialList['air'].AddBox(air_start, air_stop )
+
 #######################################################################################################################################
 # Geometry and Grid
 #######################################################################################################################################
-SIMBOX_START = np.array([-MSL_dx/2, substrate_start[1], -substrate_thickness])
-SIMBOX_STOP = np.array([MSL_dx/2, substrate_stop[1], air_stop[2]])
+SIMBOX_START = np.array([air_start[0], air_start[1], -substrate_thickness])
+SIMBOX_STOP = np.array([air_stop[0], air_stop[1], air_stop[2]])
 ## MAIN GRID
 wavelength = (C0/f_max) *  (1/(sqrt(substrate_epr)))
 wavelength_u = wavelength / unit
-resolution_xyz = np.array([wavelength_u / 50, wavelength_u/50, wavelength_u/50])
 
-mesh.AddLine('x', [SIMBOX_START[0], SIMBOX_STOP[0]])
-mesh.SmoothMeshLines('x', resolution_xyz[0])
+resolution_xyz = np.array([wavelength / 10, wavelength / 10, wavelength / 10])
+resolution_u_xyz = resolution_xyz / unit
+print(f"RESOLUTION: {resolution_xyz}")
+print(f"RESOLUTION: {resolution_u_xyz}")
 
-mesh.AddLine('y', [SIMBOX_START[1], SIMBOX_STOP[1]])
-mesh.SmoothMeshLines('y', resolution_xyz[1])
+mesh.x = np.concatenate((mesh.x, arangeWithEndpoint(SIMBOX_START[0], SIMBOX_STOP[0], resolution_u_xyz[0])))
+mesh.y = np.concatenate((mesh.y, arangeWithEndpoint(SIMBOX_START[1], SIMBOX_STOP[1], resolution_u_xyz[1])))
+mesh.z = np.concatenate((mesh.z, arangeWithEndpoint(SIMBOX_START[2], SIMBOX_STOP[2], resolution_u_xyz[2])))
 
-mesh.AddLine('z', [SIMBOX_START[2], SIMBOX_STOP[2]])
-mesh.SmoothMeshLines('z', resolution_xyz[2])
+print(f"mesh_x: {mesh.x}")
+print(f"mesh_y: {mesh.y}")
+print(f"mesh_z: {mesh.z}")
 
 ## COPPER GRID
+print(f"argwhere_y: {np.argwhere((mesh.y <= -MSL_dy/2) & (mesh.y >= MSL_dy/2))}")
+print(f"argwhere_z: {np.argwhere((mesh.z >= -MSL_dz) & (mesh.z <= 0))}")
 
+mesh.y = np.delete(mesh.y, np.argwhere((mesh.y <= -MSL_dy/2) & (mesh.y >= MSL_dy/2)))
+mesh.y = np.concatenate((mesh.y, np.array([-MSL_dy/2, MSL_dy/2, 0])))
+mesh.z = np.delete(mesh.z, np.argwhere((mesh.z >= -MSL_dz) & (mesh.z <= 0)))
+mesh.z = np.concatenate((mesh.z, np.array([-MSL_dz, -MSL_dz / 2, 0])))
 
 ## DIELECTRIC GRID
 
@@ -134,26 +160,66 @@ mesh.SmoothMeshLines('z', resolution_xyz[2])
 
 ports = []
 '''
-NOTE: 
+FUNCTION: FDTD.AddMSLPort( 1,  materialList['copper'], port1start, port1stop, 'x', 'z', excite=1, FeedShift=port1_exc_dx, MeasPlaneShift=port1_meas_dx, priority=10)
 @param: exc_dir: 'z' -> The excitation direction here is "z", which is the direction of the E-field excitation.
 @param: prop_dir: 'x' -> The propagation direction, which is "x" in this case because the direction of propagation is "x".
 @param: feed-shift: 10 * resolution -> Shift the port from start by a given distance in drawing units (in the propagation direction), default = 0, ONLY works when ExcitePort is set.
 @param: measure plane shift: MSL_length / 3 -> Shifts the measurement plane from start a given distance (in the propagation direction) in drawing units (Default is the midldle of start / stop)
 @param: feed_R -> None (default), is the port lumped resistance. By default there is NONE and the port ends in an ABC-absorption boundary condition
 '''
+# ! TODO: Simply try adding the points here and perform a "SmoothMeshLines"-call on the meshlines
+
 port1_dx = 50e3
 port1_exc_dx = 30e3
 port1_meas_dx = 40e3
 port1start = [-MSL_dx/2,          -MSL_dy/2,  substrate_start[2]]
 port1stop  = [-MSL_dx/2+port1_dx,  MSL_dy/2,  substrate_stop[2]]
-ports.append(FDTD.AddMSLPort( 1,  materialList['copper'], port1start, port1stop, 'x', 'z', excite=1, FeedShift=port1_exc_dx, MeasPlaneShift=port1_meas_dx, priority=10))
-
+mesh.x = np.concatenate((mesh.x, np.array([-MSL_dx/2+port1_exc_dx, -MSL_dx/2+port1_meas_dx])))
+print(f"port: X: ({port1start[0]:.2e}->{port1stop[0]:.2e}), Y:({port1start[1]:.2e}->{port1stop[1]:.2e}), Z:({port1start[2]:.2e}->{port1stop[2]:.2e})")
 
 port2_dx = 50e3
 port2_meas_dx = 40e3
 port2start = [(MSL_dx/2),          -MSL_dy/2, substrate_start[2]]
 port2stop  = [(MSL_dx/2)-port2_dx,  MSL_dy/2,  substrate_stop[2]]
+print(f"port: X: ({port2start[0]:.2e}->{port2stop[0]:.2e}), Y:({port2start[1]:.2e}->{port2stop[1]:.2e}), Z:({port2start[2]:.2e}->{port2stop[2]:.2e})")
+mesh.x = np.concatenate((mesh.x, np.array([MSL_dx/2-port2_meas_dx])))
+
+## AddLines
+openEMS_grid.AddLine('x', mesh.x)
+openEMS_grid.AddLine('y', mesh.y)
+openEMS_grid.AddLine('z', mesh.z)
+
+'''
+FUNCTION: SmoothMeshLines(lines, max_res, ratio=1.5, **kw):
+@param: List of mesh lines to be smoothed.
+@param: Maximum allowed resolution, resulting mesh will always stay below that value.
+@param: Ratio of increase or decrease of neighboring mesh lines.
+'''
+from CSXCAD.SmoothMeshLines import SmoothMeshLines
+
+# print(f"GRID BEFORE: ")
+# print(f"{np.sort(openEMS_grid.GetLines(2))}")
+# newgrid = SmoothMeshLines(np.sort(openEMS_grid.GetLines(2)), resolution_u_xyz[0]/5, 1.6)
+# print(f"{newgrid}")
+
+print("BEFORE")
+print(f"X_Meshlines: {openEMS_grid.GetLines(0)}")
+print(f"Y_Meshlines: {openEMS_grid.GetLines(0)}")
+print(f"Z_Meshlines: {openEMS_grid.GetLines(0)}")
+
+openEMS_grid.SmoothMeshLines(0, resolution_u_xyz[0], 1.7)
+openEMS_grid.SmoothMeshLines(1, resolution_u_xyz[1], 1.7)
+openEMS_grid.SmoothMeshLines(2, resolution_u_xyz[2], 1.7)
+
+print("AFTER")
+print(f"X_Meshlines: {openEMS_grid.GetLines(0)}")
+print(f"Y_Meshlines: {openEMS_grid.GetLines(1)}")
+print(f"Z_Meshlines: {openEMS_grid.GetLines(2)}")
+
+ports.append(FDTD.AddMSLPort( 1,  materialList['copper'], port1start, port1stop, 'x', 'z', excite=1, FeedShift=port1_exc_dx, MeasPlaneShift=port1_meas_dx, priority=10))
 ports.append(FDTD.AddMSLPort( 2, materialList['copper'], port2start, port2stop, 'x', 'z', MeasPlaneShift=port2_meas_dx, priority=10))
+
+
 
 ####################################################################################
 ################################# EXCITATION #######################################
@@ -223,6 +289,11 @@ show()
 #######################################################################################
 
 '''
-QUESTION 1:
-- Why are the field values NaN here? Is it because there is no impedance?
+MESH CREATION FOR CONDUCTORS
+1. We need to create one general mesh
+2. We need to remove the places where there are conductors around "a factor" (let's says 2 or 3*width) of the conductor
+3. We need to add a grid there that refines from lambda / 20 to the grid width, to make sure there is at least 1 grid-point within the conductor
+	- Create a function that logarithmically (with a factor of n), reduces the grid size from a to b
+4. We need to do the same on the other side of the conductor, above, and below the conductor
+-> CHeck why SmoothMeshLines doesn't do the job as it is supposed to.
 '''
