@@ -28,7 +28,7 @@ import os, tempfile
 from pylab import *
 import os, tempfile, shutil
 import copy
-
+import math
 from CSXCAD  import ContinuousStructure
 from openEMS import openEMS
 
@@ -41,7 +41,8 @@ unit = 1e-6 # specify everything in um
 
 ## prepare simulation folder
 currDir = os.getcwd()
-Sim_Path = os.path.join(currDir, 'MSL_ports_copper_lumped')
+file_name = 'MSL_ports_copper_lumped'
+Sim_Path = os.path.join(currDir, file_name)
 Sim_CSX = 'MSL_copper.xml'
 if os.path.exists(Sim_Path):
 	shutil.rmtree(Sim_Path)   # clear previous directory
@@ -50,7 +51,7 @@ if os.path.exists(Sim_Path):
 
 ## setup FDTD parameter & excitation function
 max_timesteps = 40000
-min_decrement = 1e-5
+min_decrement = 1e-7
 
 CSX = ContinuousStructure()
 FDTD = openEMS(NrTS=max_timesteps,EndCriteria=min_decrement)
@@ -60,7 +61,7 @@ FDTD.SetCSX(CSX)
 #######################################################################################################################################
 # BOUNDARY CONDITIONS
 #######################################################################################################################################
-FDTD.SetBoundaryCond( ['MUR', 'MUR', 'MUR', 'MUR', 'PEC', 'MUR'] )
+# FDTD.SetBoundaryCond( ['MUR', 'MUR', 'MUR', 'MUR', 'PEC', 'MUR'] )
 # FDTD.SetBoundaryCond( ['PEC', 'PEC', 'PEC', 'PEC', 'PEC', 'PEC'] )
 FDTD.SetBoundaryCond( ['PML_8', 'PML_8', 'PML_8', 'PML_8', 'PEC', 'PML_8'] )
 
@@ -100,17 +101,17 @@ MSL_dy = 500;  # trace width
 MSL_dx = 200e3  # 500 mm
 pec_start = [-MSL_dx/2, -MSL_dy/2, -MSL_dz]
 pec_end = [MSL_dx/2, MSL_dy/2, 0]
-materialList['copper'].AddBox(pec_start, pec_end)
+materialList['copper'].AddBox(start=pec_start, stop=pec_end, priority=20)
 
 ## MATERIAL - FR4
 materialList['FR4'] = CSX.AddMaterial('FR4')
 substrate_epr = 4.6
-materialList['FR4'].SetMaterialProperty(epsilon=4.6, mue=1.0, kappa=0.0, sigma=0.0)
+materialList['FR4'].SetMaterialProperty(epsilon=substrate_epr, mue=1.0, kappa=0.0, sigma=0.0)
 substrate_thickness = 1.6e3 # 1.6 mm
 
 substrate_start = [-MSL_dx/2, -4*MSL_dy, 0]
 substrate_stop  = [MSL_dx/2, 4*MSL_dy, -substrate_thickness]
-materialList['FR4'].AddBox(substrate_start, substrate_stop )
+materialList['FR4'].AddBox(start=substrate_start, stop=substrate_stop, priority=0)
 
 ## MATERIAL - AIR
 materialList['air'] = CSX.AddMaterial('air')
@@ -120,7 +121,30 @@ materialList['air'].SetMaterialProperty(epsilon=1.0, mue=1.0, kappa=0.0, sigma=0
 air_start = [substrate_start[0], substrate_start[1], 0]
 # safety of lambda/4 from edge absorption condition
 air_stop = [substrate_stop[0], substrate_stop[1], substrate_thickness]
-materialList['air'].AddBox(air_start, air_stop )
+materialList['air'].AddBox(start=air_start, stop=air_stop, priority=0)
+
+
+## MATERIAL - PML
+#! DEFINE HERE FOR KAPPA
+# port2_dx = 50e3
+# finalKappa = 1/(port2_dx**2) 	
+# finalSigma = finalKappa*MUE0/EPS0
+# materialList['fakepml'] = CSX.AddMaterial('fakepml')
+# materialList['fakepml'].SetMaterialProperty(kappa=finalKappa, sigma=finalSigma)
+# materialList['fakepml'].SetMaterialWeight(epsilon='pow(x-' +str(MSL_dx/2-port2_dx/2) + ',2)')
+# materialList['fakepml'].SetMaterialWeight(kappa='pow(x-' +str(MSL_dx/2-port2_dx/2) + ',2)')
+# fakepml_start = [MSL_dx/2-port2_dx/2,  -4*MSL_dy,  -substrate_thickness]
+# fakepml_stop  = [MSL_dx/2, 4*MSL_dy, substrate_thickness]
+# materialList['fakepml'].AddBox(start=fakepml_start, stop=fakepml_stop, priority=10 )
+
+'''
+For some reason the dielectric here doesn't absorb, it simply reflects
+-> Figure out why.
+The problem here seems to be that the port reflects, perhaps this is because the port impedance is a discrete 50 ohms.
+So the idea here is we need either 
+- to match the port impedance, to make the port non-reflective.
+- to remove the port and simply put probes there instead
+'''
 
 #######################################################################################################################################
 # Geometry and Grid
@@ -176,14 +200,14 @@ FUNCTION: FDTD.AddMSLPort( 1,  materialList['copper'], port1start, port1stop, 'x
 
 port1_dx = 50e3
 port1start = [-MSL_dx/2+port1_dx,          -MSL_dy/2,  substrate_start[2]]
-port1stop  = [-MSL_dx/2+port1_dx,  MSL_dy/2,  substrate_stop[2]/2]
+port1stop  = [-MSL_dx/2+port1_dx,  MSL_dy/2,  substrate_stop[2]]
 mesh.x = np.concatenate((mesh.x, np.array([-MSL_dx/2+port1_dx, -MSL_dx/2])))
 print(f"port: X: ({port1start[0]:.2e}->{port1stop[0]:.2e}), Y:({port1start[1]:.2e}->{port1stop[1]:.2e}), Z:({port1start[2]:.2e}->{port1stop[2]:.2e})")
 
 port2_dx = 50e3
 port2_meas_dx = 40e3
 port2start = [(MSL_dx/2-port2_dx),          -MSL_dy/2, substrate_start[2]]
-port2stop  = [(MSL_dx/2)-port2_dx,  MSL_dy/2,  substrate_stop[2]/2]
+port2stop  = [(MSL_dx/2)-port2_dx,  MSL_dy/2,  substrate_stop[2]]
 print(f"port: X: ({port2start[0]:.2e}->{port2stop[0]:.2e}), Y:({port2start[1]:.2e}->{port2stop[1]:.2e}), Z:({port2start[2]:.2e}->{port2stop[2]:.2e})")
 mesh.x = np.concatenate((mesh.x, np.array([MSL_dx/2-port2_meas_dx])))
 
@@ -210,8 +234,8 @@ print(f"X_Meshlines: {openEMS_grid.GetLines(0)}")
 print(f"Y_Meshlines: {openEMS_grid.GetLines(1)}")
 print(f"Z_Meshlines: {openEMS_grid.GetLines(2)}")
 
-openEMS_grid.SmoothMeshLines(0, resolution_u_xyz[0]/10, 1.1)
-openEMS_grid.SmoothMeshLines(1, resolution_u_xyz[1]/10, 1.1)
+openEMS_grid.SmoothMeshLines(0, resolution_u_xyz[0]/2, 1.1)
+openEMS_grid.SmoothMeshLines(1, resolution_u_xyz[1]/2, 1.1)
 openEMS_grid.SmoothMeshLines(2, resolution_u_xyz[2]/10, 1.1)
 
 print("AFTER")
@@ -222,8 +246,8 @@ print(f"Z_Meshlines: {openEMS_grid.GetLines(2)}")
 feed_R = 50
 portExcitationAmplitude = 4000.0
 portDirection = 'z'
-ports.append(FDTD.AddLumpedPort( 1, feed_R, port1start, port1stop, 'z', excite=1.0 * portExcitationAmplitude, priority=200))
-ports.append(FDTD.AddLumpedPort( 2, feed_R, port2start, port2stop, 'z', priority=200))
+ports.append(FDTD.AddLumpedPort( 1, feed_R, port1start, port1stop, 'z', excite=1.0 * portExcitationAmplitude, priority=30))
+ports.append(FDTD.AddLumpedPort( 2, feed_R, port2start, port2stop, 'z', priority=30))
 
 
 
@@ -276,18 +300,52 @@ b2 = S22 * a2 + S12 * a1 -> S12 = b2 / a1 (fraction of power transferred from po
 https://cds.cern.ch/record/1415639/files/p67.pdf
 '''
 
+
+########
+# PLOT S-PARAMETERS HERE
 s11 = ports[0].uf_ref / ports[0].uf_inc
 s21 = ports[1].uf_ref / ports[0].uf_inc
 
+#### RESONANT FREQ CALCULATIONS
+MSL_length = (MSL_dx - port2_dx - port1_dx)*unit
+i=1
+res_freq_list = []
+res_freq = (i * 3.0e8) / (2 * MSL_length * math.sqrt(substrate_epr))
+while (res_freq < f_max):
+	res_freq_list.append(res_freq)
+	i += 1
+	res_freq = (i * 3.0e8) / (2.0 * MSL_length * math.sqrt(substrate_epr))
+res_freq_list = np.array(res_freq_list)
+print(f"REESONANT FREQUENCIES: {res_freq_list}")
+figure()
 plot(f/1e9,20*log10(abs(s11)),'k-',linewidth=2 , label='$S_{11}$')
-grid()
 plot(f/1e9,20*log10(abs(s21)),'r--',linewidth=2 , label='$S_{21}$')
+plot(res_freq_list/1e9, np.zeros_like(res_freq_list), 'bo')  # plot x and y using blue circle markers
+
+grid()
 legend()
 ylabel('S-Parameter (dB)')
 xlabel('frequency (GHz)')
 ylim([-40, 2])
 
+plt.savefig(os.path.join(Sim_Path, 's_parameter.pdf'))
 show()
+
+
+########
+ZL = ports[0].uf_tot / ports[0].if_tot
+
+## Compare analytic and numerical wave-impedance
+figure()
+plot(f*1e-6,real(ZL), linewidth=2, label='$\Re\{Z_L\}$')
+grid()
+plot(f*1e-6,imag(ZL),'r--', linewidth=2, label='$\Im\{Z_L\}$')
+ylabel('ZL $(\Omega)$')
+xlabel(r'frequency (MHz) $\rightarrow$')
+legend()
+plt.savefig(os.path.join(Sim_Path, 'zl_parameter.pdf'))
+show()
+
 
 
 #######################################################################################
