@@ -1,4 +1,20 @@
 # Simulation
+
+## Fake-PML
+The fake-PML here has 
+- kappa increasing from 0 to finalKappa, in quadratic fashion.
+### Conductivity / Sigma
+Conductivity: sigma increasing from 0 to finalSigma, in quadratic fashion.
+The higher the conductivity, the more electric current flows.
+A perfect conductor has a conductivity of infinity, which means the charges are only present on the outside of the conductor, and there is no electric field inside of the conductor.
+
+### Loss tangent / Kappa
+A parameter mostly used in simulations, calculated from epsilon (electric permittivity) and mu (magnetic permeability) to dampen waves smoothly.
+
+It is not in fact a "Physical"-parameter, more like a function used to scale the permittivity and permeability in such a way as to 
+1. introduce EM-loss into the material
+2. match the impedance of the main domain to avoid reflections.
+
 ## Boundary Conditions
 The example simulation was done with boundary conditions
 

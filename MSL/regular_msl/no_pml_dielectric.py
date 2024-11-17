@@ -185,11 +185,11 @@ materialList['copper'].AddBox( copper_start, copper_stop, priority=copper_priori
 ## FAKE PML
 pml_start = [MSL_dx - fakepml_dx, mesh.y[0] , mesh.z[0]]
 pml_stop  = [MSL_dx				, mesh.y[-1], fakepml_l_dz]
-materialList['fakepml_l'].AddBox(pml_start, pml_stop, priority=fakepml_priority)
+# materialList['fakepml_l'].AddBox(pml_start, pml_stop, priority=fakepml_priority)
 
 pml_start = [MSL_dx - fakepml_dx, mesh.y[0] , fakepml_l_dz]
 pml_stop  = [MSL_dx				, mesh.y[-1], fakepml_u_dz+fakepml_l_dz]
-materialList['fakepml_u'].AddBox(pml_start, pml_stop, priority=fakepml_priority)
+# materialList['fakepml_u'].AddBox(pml_start, pml_stop, priority=fakepml_priority)
 
 ## FR4
 substrate_start = [0, 			 mesh.y[0] , 0]
