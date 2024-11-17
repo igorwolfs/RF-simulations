@@ -1,5 +1,14 @@
 '''
-Basic example taken from theliebig
+GOAL:
+This example builds further on the example by theliebig by adding dielectric, while keeping all other dimensions identical.
+
+ISSUE: FAKEPML-reflections
+The issue here is however, that when entering the fakePML layer, the epsilon will suddenly change, which will lead to the impedance to change.
+This impedance change will eventually lead to a reflection of the wave at that point.
+
+=> So we need to either remove the FAKEPML or split it into 2 to accomodate the epsilon_r of the medium.
+CONCLUSION:
+
 '''
 
 
@@ -18,6 +27,7 @@ APPCSXCAD_CMD = '~/opt/openEMS/bin/AppCSXCAD'
 from openEMS.physical_constants import *
 unit = 1e-3 # specify everything in mm
 
+
 ## SIMULATION FOLDER SETUP
 currDir = os.getcwd()
 file_name = os.path.basename(__file__).strip('.py')
@@ -29,7 +39,7 @@ if not (os.path.exists(Plot_Path)):
 else:
 	shutil.rmtree(Sim_Path)
 	os.mkdir(Sim_Path)
-	
+
 
 ## setup FDTD parameter & excitation function
 CSX = ContinuousStructure()
@@ -72,6 +82,7 @@ materialList['air'] = CSX.AddMaterial( 'air' )
 air_dx = 600
 air_dy = 400
 air_dz = 200
+air_priority = 0
 
 ## MATERIAL - PEC
 materialList['copper'] = CSX.AddMaterial( 'copper' )
@@ -79,25 +90,33 @@ materialList['copper'].SetMaterialProperty(epsilon=1.0, mue=1.0, kappa=56e6)
 MSL_dx = 600 # 600 mm
 MSL_dy = 50 # 50 mm
 MSL_dz = 1  # 10 mm
-substrate_dz = 10 # 10 mm
+copper_priority = 20
 
 ## MATERIAL - fakepml
-'''
-This "pml" is a normal material with graded losses.
-Eelectric and magnetic losses are related to give low reflection for normally incident TEM waves.
-
-# * Weight function
-The weight function starts at MSL_dx-fakepml_dx (so 0 -> (MSL_dx-fakepml_dx)**2
-x: MSL_dx-fakepml_dx (500) -> MSL_dx (600) is sigma and kappa in the X-direction ONLY
-So the sigma, kappa increases quadratically in the X-direction when going from 500 -> 600 (from 0 -> 100**2)
-'''
 fakepml_dx = 100 # Absorber length
-fakepml_epr = 3.66
-fakepml_thickness = 254
 fakepml_finalKappa = 1/fakepml_dx**2
 fakepml_finalSigma = fakepml_finalKappa*MUE0/EPS0
-materialList['fakepml'] = CSX.AddMaterial( 'fakepml', kappa=fakepml_finalKappa, sigma=fakepml_finalSigma)
-materialList['fakepml'].SetMaterialWeight(kappa='pow(x-' + str(MSL_dx-fakepml_dx) + ',2)', sigma='pow(x-' + str(MSL_dx-fakepml_dx) + ',2)')
+fakepml_priority = 1
+
+## MATERIAL - FR4
+substrate_eps = 3.66
+materialList['FR4'] = CSX.AddMaterial( 'FR4', epsilon=substrate_eps)
+substrate_dx = MSL_dx
+substrate_dy = air_dy
+substrate_dz = 10 
+substrate_priority = 1
+
+# fakepml_l
+fakepml_u_epsilon = 3.66
+fakepml_u_dz = air_dz-substrate_dz
+materialList['fakepml_u'] = CSX.AddMaterial( 'fakepml_u', epsilon=fakepml_u_epsilon, kappa=fakepml_finalKappa, sigma=fakepml_finalSigma)
+materialList['fakepml_u'].SetMaterialWeight(kappa='pow(x-' + str(MSL_dx-fakepml_dx) + ',2)', sigma='pow(x-' + str(MSL_dx-fakepml_dx) + ',2)')
+
+# fakepml_u
+fakepml_l_epsilon = 1
+fakepml_l_dz = substrate_dz
+materialList['fakepml_l'] = CSX.AddMaterial( 'fakepml_l', epsilon=fakepml_l_epsilon, kappa=fakepml_finalKappa, sigma=fakepml_finalSigma)
+materialList['fakepml_l'].SetMaterialWeight(kappa='pow(x-' + str(MSL_dx-fakepml_dx) + ',2)', sigma='pow(x-' + str(MSL_dx-fakepml_dx) + ',2)')
 
 #######################################################################################################################################
 # EXCITATION Gaussian
@@ -113,7 +132,7 @@ FDTD.SetGaussExcite( f0, fc)
 #######################################################################################################################################
 
 ## WAVELENGTH
-wavelength_min = C0/(f0+fc)
+wavelength_min = C0/(f0+fc) / sqrt(substrate_eps)
 wavelength_min_u = wavelength_min / unit
 
 ## Setup Geometry & Mesh
@@ -138,21 +157,28 @@ exc_start = [mesh.x[0], -MSL_dy/2 , 0]
 exc_stop  = [mesh.x[0],  MSL_dy/2 , substrate_dz]
 
 excitation = CSX.AddExcitation('excite', exc_type=0, exc_val=[0, 0, -1], delay=0)
-excitation.AddBox(exc_start, exc_stop) # priority = 
+excitation.AddBox(exc_start, exc_stop)
 
 ## COPPER
 
 copper_start = [0, 	-MSL_dy/2,   substrate_dz]
 copper_stop  = [MSL_dx, MSL_dy/2, 	substrate_dz+MSL_dz]
-copper_priority = 100 # the geometric priority is set to 100
 materialList['copper'].AddBox( copper_start, copper_stop, priority=copper_priority)
 
 
-## fake pml
+## FAKE PML
 pml_start = [MSL_dx - fakepml_dx, mesh.y[0] , mesh.z[0]]
-pml_stop  = [MSL_dx				, mesh.y[-1], mesh.z[-1]]
-pml_priority = 0
-materialList['fakepml'].AddBox(pml_start, pml_stop, priority=pml_priority)
+pml_stop  = [MSL_dx				, mesh.y[-1], fakepml_l_dz]
+materialList['fakepml_l'].AddBox(pml_start, pml_stop, priority=fakepml_priority)
+
+pml_start = [MSL_dx - fakepml_dx, mesh.y[0] , fakepml_l_dz]
+pml_stop  = [MSL_dx				, mesh.y[-1], fakepml_u_dz+fakepml_l_dz]
+materialList['fakepml_u'].AddBox(pml_start, pml_stop, priority=fakepml_priority)
+
+## FR4
+substrate_start = [0, 			 mesh.y[0] , 0]
+substrate_stop  = [substrate_dx, mesh.y[-1], substrate_dz]
+materialList['FR4'].AddBox(substrate_start, substrate_stop, priority=substrate_priority)
 
 
 ## Add lines to grid
@@ -175,11 +201,6 @@ dump_boxes['ht'] = CSX.AddDump(  'Ht_', dump_type=1, dump_mode=2 ) # cell interp
 dump_boxes['ht'].AddBox(et_start, et_stop, priority=0 )
 
 ## define voltage calc box
-# voltage calc boxes will automatically snap to the next mesh-line
-# z -> x
-# x -> y
-# y -> z
-
 dump_boxes['ut1'] = CSX.AddProbe(  'ut1', 0 )
 interpl_x  = interp1d( mesh.x, np.arange(0,mesh.x.size, 1), kind='nearest', fill_value="extrapolate")
 xidx_ut1 = int(interpl_x(MSL_dx/2)) # length / 2
@@ -190,7 +211,6 @@ print(f"ut1: {ut1_start} -> {ut1_stop}")
 dump_boxes['ut1'].AddBox(ut1_start, ut1_stop, priority=0)
 
 # add a second voltage probe to compensate space offset between voltage and current
-
 dump_boxes['ut2'] = CSX.AddProbe(  'ut2', 0 )
 ut2_start = [mesh.x[xidx_ut1+1], 0, substrate_dz]
 ut2_stop  = [mesh.x[xidx_ut1+1], 0, 0]
