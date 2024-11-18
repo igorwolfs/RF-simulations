@@ -1,15 +1,20 @@
 '''
-GOAL:
+# * GOAL:
 This example builds further on the example by theliebig by adding dielectric, while keeping all other dimensions identical.
 
-ISSUE: FAKEPML-reflections
+# * ISSUE: FAKEPML-reflections
 The issue here is however, that when entering the fakePML layer, the epsilon will suddenly change, which will lead to the impedance to change.
 This impedance change will eventually lead to a reflection of the wave at that point.
 
 => So we need to either remove the FAKEPML or split it into 2 to accomodate the epsilon_r of the medium.
-CONCLUSION:
-Even after splitting the PML in 2, there are still too many reflections
+
+# * CONCLUSION: splitting the PML in 2
+Even after splitting the PML in 2, there's still loads of reflection.
 HOWEVER: it seems like after adding the PMC boundaries the reflections are minimized, and the impedance plots look very like the previous impedance plots.
+
+# * CONCLUSION: removing the PML
+This result turns out to be much better than actually splitting the PML in 2. The reflections are reduced and the impedance is more steady.
+=> Uncomment PML to check.
 '''
 
 
@@ -46,7 +51,8 @@ else:
 CSX = ContinuousStructure()
 max_timesteps = 2000
 min_decrement = 1e-5 # equivalent to -50 dB
-FDTD = openEMS(NrTS=max_timesteps,EndCriteria=min_decrement)
+#! WARNING: When NOT using these max_timesteps, the MSL keeps reflecting back and forth until the energy number reaches infinity
+FDTD = openEMS(NrTS=max_timesteps, EndCriteria=min_decrement)
 FDTD.SetCSX(CSX)
 #######################################################################################################################################
 # BOUNDARY CONDITIONS

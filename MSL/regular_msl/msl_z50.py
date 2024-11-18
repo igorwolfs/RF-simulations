@@ -1,5 +1,9 @@
 '''
-Basic example taken from theliebig
+# * GOAL:
+The goal here is to simply to 
+- represent a 50 ohm MSL
+- plot its S-parameters (which should have a 0 reflection coefficient)
+- plot its voltages
 '''
 
 
@@ -16,7 +20,8 @@ APPCSXCAD_CMD = '~/opt/openEMS/bin/AppCSXCAD'
 
 ### CONSTANTS
 from openEMS.physical_constants import *
-unit = 1e-3 # specify everything in mm
+unit = 1e-6 # specify everything in mm
+
 
 ## SIMULATION FOLDER SETUP
 currDir = os.getcwd()
@@ -29,21 +34,36 @@ if not (os.path.exists(Plot_Path)):
 else:
 	shutil.rmtree(Sim_Path)
 	os.mkdir(Sim_Path)
-	
+
 
 ## setup FDTD parameter & excitation function
 CSX = ContinuousStructure()
-max_timesteps = 2000
+max_timesteps = 200000
 min_decrement = 1e-5 # equivalent to -50 dB
-FDTD = openEMS(NrTS=max_timesteps,EndCriteria=min_decrement)
+FDTD = openEMS(NrTS=1000000000)#NrTS=max_timesteps,EndCriteria=min_decrement)
 FDTD.SetCSX(CSX)
 #######################################################################################################################################
 # BOUNDARY CONDITIONS
 #######################################################################################################################################
 
+'''
+EFFECT OF DIFFERENT BOUNDARY CONDITIONS:
+# * FDTD.SetBoundaryCond( ['PML_8', 'PML_8', 'PMC', 'PMC', 'PEC', 'PMC'] )
+Shows weird reflections
+
+# * FDTD.SetBoundaryCond( ['MUR', 'MUR', 'PMC', 'PMC', 'PEC', 'PMC'] )
+Brings us close to the expected result.
+
+# * FDTD.SetBoundaryCond( ['MUR', 'MUR', 'MUR', 'MUR', 'PEC', 'MUR'] )
+Brings us close to the expected result.
+
+# * CONCLUSION
+=> It seems like the PML_8 boundary is really to blame for some of the weird reflections. We have to really be carefull about how and when to use the PML_8 boundary.
+=> The difference between adding the MUR boundary instead of the PMC is minor, there is some difference in reflection but it's not that noticeable.
+'''
+
 # Propagation direction: x-dir
-# FDTD.SetBoundaryCond( ['MUR', 'MUR', 'PMC', 'PMC', 'PEC', 'PMC'] )
-FDTD.SetBoundaryCond( ['PML_8', 'PML_8', 'MUR', 'MUR', 'PEC', 'MUR'] )
+FDTD.SetBoundaryCond( ['MUR', 'MUR', 'MUR', 'MUR', 'PEC', 'MUR'] )
 
 #######################################################################################################################################
 # COORDINATE SYSTEM
@@ -67,37 +87,29 @@ mesh.z = np.array([])
 materialList = {}
 
 
-## MATERIAL - AIR
-materialList['air'] = CSX.AddMaterial( 'air' )
-air_dx = 600
-air_dy = 400
-air_dz = 200
-
 ## MATERIAL - PEC
 materialList['copper'] = CSX.AddMaterial( 'copper' )
 materialList['copper'].SetMaterialProperty(epsilon=1.0, mue=1.0, kappa=56e6)
-MSL_dx = 600 # 600 mm
-MSL_dy = 50 # 50 mm
-MSL_dz = 1  # 10 mm
-substrate_dz = 10 # 10 mm
+MSL_dx = 200e3 # 50 mm
+MSL_dy = 360   # 0.361 mm
+MSL_dz = 35    # 0.035 mm
+copper_priority = 20
 
-## MATERIAL - fakepml
-'''
-This "pml" is a normal material with graded losses.
-Eelectric and magnetic losses are related to give low reflection for normally incident TEM waves.
+## MATERIAL - AIR
+materialList['air'] = CSX.AddMaterial( 'air' )
+air_dx = MSL_dx
+air_dy = 500*MSL_dy
+air_dz = 5e3 # > 20 times the substrate height
+air_priority = 0
 
-# * Weight function
-The weight function starts at MSL_dx-fakepml_dx (so 0 -> (MSL_dx-fakepml_dx)**2
-x: MSL_dx-fakepml_dx (500) -> MSL_dx (600) is sigma and kappa in the X-direction ONLY
-So the sigma, kappa increases quadratically in the X-direction when going from 500 -> 600 (from 0 -> 100**2)
-'''
-fakepml_dx = 100 # Absorber length
-fakepml_epr = 3.66
-fakepml_thickness = 254
-fakepml_finalKappa = 1/fakepml_dx**2
-fakepml_finalSigma = fakepml_finalKappa*MUE0/EPS0
-materialList['fakepml'] = CSX.AddMaterial( 'fakepml', kappa=fakepml_finalKappa, sigma=fakepml_finalSigma)
-materialList['fakepml'].SetMaterialWeight(kappa='pow(x-' + str(MSL_dx-fakepml_dx) + ',2)', sigma='pow(x-' + str(MSL_dx-fakepml_dx) + ',2)')
+
+## MATERIAL - FR4
+substrate_eps = 3.8
+materialList['FR4'] = CSX.AddMaterial( 'FR4', epsilon=substrate_eps)
+substrate_dx = MSL_dx
+substrate_dy = air_dy
+substrate_dz = 206    # Impedance matched 206 zm
+substrate_priority = 1
 
 #######################################################################################################################################
 # EXCITATION Gaussian
@@ -113,46 +125,50 @@ FDTD.SetGaussExcite( f0, fc)
 #######################################################################################################################################
 
 ## WAVELENGTH
-wavelength_min = C0/(f0+fc)
+wavelength_min = C0/(f0+fc) / sqrt(substrate_eps)
 wavelength_min_u = wavelength_min / unit
 
-## Setup Geometry & Mesh
+## eometry & Mesh Setup
 resolution_u = wavelength_min_u / 15 # resolution of lambda/50
 
 from CSXCAD.SmoothMeshLines import SmoothMeshLines
 
+
 mesh.x = np.concatenate((mesh.x, np.array([0, air_dx])))
 mesh.x = SmoothMeshLines(mesh.x, resolution_u)
+print(f"Resolution_u: {resolution_u}")
+
 
 mesh.y = np.concatenate((mesh.y, np.array([-air_dy/2, air_dy/2, -MSL_dy/2, MSL_dy/2])))
+mesh_third_dy = np.array([-MSL_dy/3, MSL_dy*2/3])
+mesh.y = np.concatenate((mesh.y, mesh_third_dy+MSL_dy/2, -mesh_third_dy-MSL_dy/2))
 mesh.y = SmoothMeshLines(mesh.y, resolution_u)
 
+
 mesh.z = np.concatenate((mesh.z, linspace(0, substrate_dz, 5), np.array([substrate_dz+MSL_dz, air_dz])))
+mesh_third_dz = np.array([-MSL_dz/3, MSL_dz*2/3]) / 4
+mesh.z = np.concatenate((mesh.z, (substrate_dz+MSL_dz/2) + mesh_third_dz, (substrate_dz - MSL_dz/2) - mesh_third_dz))
 mesh.z = SmoothMeshLines(mesh.z, resolution_u)
 
-#### * BOXES
 
+#### * BOXES
 ## Excitation
 ## Add excitation below the strip
-exc_start = [mesh.x[0], -MSL_dy/2 , 0]
-exc_stop  = [mesh.x[0],  MSL_dy/2 , substrate_dz]
+exc_start = [mesh.x[5], -MSL_dy/2 , 0]
+exc_stop  = [mesh.x[5],  MSL_dy/2 , substrate_dz]
 
 excitation = CSX.AddExcitation('excite', exc_type=0, exc_val=[0, 0, -1], delay=0)
-excitation.AddBox(exc_start, exc_stop) # priority = 
+excitation.AddBox(exc_start, exc_stop)
 
 ## COPPER
-
-copper_start = [0, 	-MSL_dy/2,   substrate_dz]
+copper_start = [0, 	   -MSL_dy/2,   substrate_dz]
 copper_stop  = [MSL_dx, MSL_dy/2, 	substrate_dz+MSL_dz]
-copper_priority = 100 # the geometric priority is set to 100
 materialList['copper'].AddBox( copper_start, copper_stop, priority=copper_priority)
 
-
-## fake pml
-pml_start = [MSL_dx - fakepml_dx, mesh.y[0] , mesh.z[0]]
-pml_stop  = [MSL_dx				, mesh.y[-1], mesh.z[-1]]
-pml_priority = 0
-materialList['fakepml'].AddBox(pml_start, pml_stop, priority=pml_priority)
+## FR4
+substrate_start = [0, 			 mesh.y[0] , 0]
+substrate_stop  = [substrate_dx, mesh.y[-1], substrate_dz]
+materialList['FR4'].AddBox(substrate_start, substrate_stop, priority=substrate_priority)
 
 
 ## Add lines to grid
@@ -175,22 +191,16 @@ dump_boxes['ht'] = CSX.AddDump(  'Ht_', dump_type=1, dump_mode=2 ) # cell interp
 dump_boxes['ht'].AddBox(et_start, et_stop, priority=0 )
 
 ## define voltage calc box
-# voltage calc boxes will automatically snap to the next mesh-line
-# z -> x
-# x -> y
-# y -> z
-
 dump_boxes['ut1'] = CSX.AddProbe(  'ut1', 0 )
 interpl_x  = interp1d( mesh.x, np.arange(0,mesh.x.size, 1), kind='nearest', fill_value="extrapolate")
 xidx_ut1 = int(interpl_x(MSL_dx/2)) # length / 2
 
 ut1_start = [mesh.x[xidx_ut1], 0, substrate_dz]
 ut1_stop  = [mesh.x[xidx_ut1], 0, 0]
-print(f"ut1: {ut1_start} -> {ut1_stop}")
+print(f"\r\nut1: {ut1_start} -> {ut1_stop}")
 dump_boxes['ut1'].AddBox(ut1_start, ut1_stop, priority=0)
 
 # add a second voltage probe to compensate space offset between voltage and current
-
 dump_boxes['ut2'] = CSX.AddProbe(  'ut2', 0 )
 ut2_start = [mesh.x[xidx_ut1+1], 0, substrate_dz]
 ut2_stop  = [mesh.x[xidx_ut1+1], 0, 0]

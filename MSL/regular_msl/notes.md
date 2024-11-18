@@ -3,10 +3,20 @@
 ## Fake-PML
 The fake-PML here has 
 - kappa increasing from 0 to finalKappa, in quadratic fashion.
+
+
 ### Conductivity / Sigma
 Conductivity: sigma increasing from 0 to finalSigma, in quadratic fashion.
 The higher the conductivity, the more electric current flows.
 A perfect conductor has a conductivity of infinity, which means the charges are only present on the outside of the conductor, and there is no electric field inside of the conductor.
+
+**Conductive loss**
+
+A conductivity which is
+1. nonzero (zero: means there is no current flow since resistivity is infinite). 
+2. non-infinite (infinite: means there is zero resistivity so no loss).
+
+Leads to ohmic losses in a medium. Note that there are many other mechanisms for energy loss in EM wave propagation.
 
 ### Loss tangent / Kappa
 A parameter mostly used in simulations, calculated from epsilon (electric permittivity) and mu (magnetic permeability) to dampen waves smoothly.
@@ -79,3 +89,13 @@ In order to compute the voltage at the same location as the current you need to 
 Make sure to shift the excitation far enough away from the measurement probes to ensure
 - The excitation signal has enough time to settle into its steady state. There might be spurious modes or non-uniform fields appearing due to the excitation which we don't want to measure.
 - There might be reflections interacting with the excitation, which might leads to weird voltage signals.
+
+
+## End conditions
+When no end conditions are passed, the signal increases to infinity.
+So make sure to always add a number of timesteps, high enough to fulfill the simulation, and low enough to make sure the simulation doesn't diverge.
+
+One of the reasons this happens might be because there are not enough energy-dissipating mechanisms present in the simulation.
+
+### How to choose the end condition
+Check when the simulation's MSL-energy level becomes pretty uniform, and make sure to stop the simulation at that point. Another option is to run the simulation once to check when the energy drops to its lowest point and then run it again until that point.

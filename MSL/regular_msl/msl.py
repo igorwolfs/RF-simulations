@@ -1,5 +1,5 @@
 '''
-Basic example taken from theliebig
+Basic example taken from theliebig, removed the PML
 '''
 
 
@@ -35,6 +35,8 @@ else:
 CSX = ContinuousStructure()
 max_timesteps = 2000
 min_decrement = 1e-5 # equivalent to -50 dB
+
+#! WARNING: When NOT using these max_timesteps, the MSL keeps reflecting back and forth until the energy number reaches infinity
 FDTD = openEMS(NrTS=max_timesteps,EndCriteria=min_decrement)
 FDTD.SetCSX(CSX)
 #######################################################################################################################################
@@ -42,8 +44,8 @@ FDTD.SetCSX(CSX)
 #######################################################################################################################################
 
 # Propagation direction: x-dir
-# FDTD.SetBoundaryCond( ['MUR', 'MUR', 'PMC', 'PMC', 'PEC', 'PMC'] )
-FDTD.SetBoundaryCond( ['PML_8', 'PML_8', 'MUR', 'MUR', 'PEC', 'MUR'] )
+FDTD.SetBoundaryCond( ['MUR', 'MUR', 'PMC', 'PMC', 'PEC', 'PMC'] )
+# FDTD.SetBoundaryCond( ['PML_8', 'PML_8', 'MUR', 'MUR', 'PEC', 'MUR'] )
 
 #######################################################################################################################################
 # COORDINATE SYSTEM
@@ -57,8 +59,6 @@ openEMS_grid.SetDeltaUnit(unit)
 mesh.x = np.array([])
 mesh.y = np.array([])
 mesh.z = np.array([])
-
-
 
 #######################################################################################################################################
 # MATERIALS
@@ -82,15 +82,6 @@ MSL_dz = 1  # 10 mm
 substrate_dz = 10 # 10 mm
 
 ## MATERIAL - fakepml
-'''
-This "pml" is a normal material with graded losses.
-Eelectric and magnetic losses are related to give low reflection for normally incident TEM waves.
-
-# * Weight function
-The weight function starts at MSL_dx-fakepml_dx (so 0 -> (MSL_dx-fakepml_dx)**2
-x: MSL_dx-fakepml_dx (500) -> MSL_dx (600) is sigma and kappa in the X-direction ONLY
-So the sigma, kappa increases quadratically in the X-direction when going from 500 -> 600 (from 0 -> 100**2)
-'''
 fakepml_dx = 100 # Absorber length
 fakepml_epr = 3.66
 fakepml_thickness = 254
@@ -152,7 +143,7 @@ materialList['copper'].AddBox( copper_start, copper_stop, priority=copper_priori
 pml_start = [MSL_dx - fakepml_dx, mesh.y[0] , mesh.z[0]]
 pml_stop  = [MSL_dx				, mesh.y[-1], mesh.z[-1]]
 pml_priority = 0
-# materialList['fakepml'].AddBox(pml_start, pml_stop, priority=pml_priority)
+materialList['fakepml'].AddBox(pml_start, pml_stop, priority=pml_priority)
 
 
 ## Add lines to grid
