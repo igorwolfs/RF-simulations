@@ -99,3 +99,14 @@ One of the reasons this happens might be because there are not enough energy-dis
 
 ### How to choose the end condition
 Check when the simulation's MSL-energy level becomes pretty uniform, and make sure to stop the simulation at that point. Another option is to run the simulation once to check when the energy drops to its lowest point and then run it again until that point.
+
+
+# TODO
+## Boundary conditions
+### Edge fringe fields
+Dive deeper into why boundary conditions lead to field fringin at the edges, and how to solve it
+- Perhaps increasing the resolution at the edges will solve this problem?
+- Perhaps using different boundary conditions will solve this problem?
+- Perhaps moving the excitation source will solve the problem
+
+### Uniform lighting up of the MSL when being excited

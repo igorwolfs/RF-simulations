@@ -52,18 +52,17 @@ EFFECT OF DIFFERENT BOUNDARY CONDITIONS:
 Shows weird reflections
 
 # * FDTD.SetBoundaryCond( ['MUR', 'MUR', 'PMC', 'PMC', 'PEC', 'PMC'] )
-Brings us close to the expected result.
+In the 50 ohm-specific case, the boundary conditions are the only one that really deliver a good result.
 
 # * FDTD.SetBoundaryCond( ['MUR', 'MUR', 'MUR', 'MUR', 'PEC', 'MUR'] )
-Brings us close to the expected result.
+In the 50 ohm-specific case, these boundary conditions lead to weird fringing fields on the edges y1, y2, z2
 
 # * CONCLUSION
-=> It seems like the PML_8 boundary is really to blame for some of the weird reflections. We have to really be carefull about how and when to use the PML_8 boundary.
-=> The difference between adding the MUR boundary instead of the PMC is minor, there is some difference in reflection but it's not that noticeable.
+=> The difference between the PMC vs MUR boundary conditions is minor on the end probe measurements, however the edge field errors are clearly noticeable
 '''
 
 # Propagation direction: x-dir
-FDTD.SetBoundaryCond( ['MUR', 'MUR', 'MUR', 'MUR', 'PEC', 'MUR'] )
+FDTD.SetBoundaryCond( ['MUR', 'MUR', 'PMC', 'PMC', 'PEC', 'PMC'] )
 
 #######################################################################################################################################
 # COORDINATE SYSTEM
@@ -154,6 +153,12 @@ mesh.z = SmoothMeshLines(mesh.z, resolution_u)
 #### * BOXES
 ## Excitation
 ## Add excitation below the strip
+'''
+NOTE:
+When moving the excitation to a position at X=0, the boundary condition makes the excitation go haywire.
+As a consequence the E-field in the whole MSL lines lights up uniformly.
+=> That's why we start the excitation here at the 5th mesh index.
+'''
 exc_start = [mesh.x[5], -MSL_dy/2 , 0]
 exc_stop  = [mesh.x[5],  MSL_dy/2 , substrate_dz]
 
@@ -190,21 +195,28 @@ dump_boxes['et'].AddBox(et_start, et_stop, priority=0 )
 dump_boxes['ht'] = CSX.AddDump(  'Ht_', dump_type=1, dump_mode=2 ) # cell interpolated
 dump_boxes['ht'].AddBox(et_start, et_stop, priority=0 )
 
+### * Grid functions for interpolation
+interpl_x  = interp1d( mesh.x, np.arange(0,mesh.x.size, 1), kind='nearest', fill_value="extrapolate")
+interpl_y  = interp1d( mesh.y, np.arange(0,mesh.y.size, 1), kind='nearest', fill_value="extrapolate")
+interpl_z  = interp1d( mesh.z, np.arange(0,mesh.z.size, 1), kind='nearest', fill_value="extrapolate")
+
+xdelta = diff(mesh.x)
+ydelta = diff(mesh.y)
+zdelta = diff(mesh.z)
+
+### * PORT 1
 ## define voltage calc box
 dump_boxes['ut1'] = CSX.AddProbe(  'ut1', 0 )
-interpl_x  = interp1d( mesh.x, np.arange(0,mesh.x.size, 1), kind='nearest', fill_value="extrapolate")
-xidx_ut1 = int(interpl_x(MSL_dx/2)) # length / 2
+xidx = int(interpl_x(MSL_dx/2)) # length / 2
 
-ut1_start = [mesh.x[xidx_ut1], 0, substrate_dz]
-ut1_stop  = [mesh.x[xidx_ut1], 0, 0]
-print(f"\r\nut1: {ut1_start} -> {ut1_stop}")
+ut1_start = [mesh.x[xidx], 0, substrate_dz]
+ut1_stop  = [mesh.x[xidx], 0, 0]
 dump_boxes['ut1'].AddBox(ut1_start, ut1_stop, priority=0)
 
 # add a second voltage probe to compensate space offset between voltage and current
 dump_boxes['ut2'] = CSX.AddProbe(  'ut2', 0 )
-ut2_start = [mesh.x[xidx_ut1+1], 0, substrate_dz]
-ut2_stop  = [mesh.x[xidx_ut1+1], 0, 0]
-print(f"ut2: {ut2_start} -> {ut2_stop}")
+ut2_start = [mesh.x[xidx+1], 0, substrate_dz]
+ut2_stop  = [mesh.x[xidx+1], 0, 0]
 dump_boxes['ut2'].AddBox(ut2_start, ut2_stop, priority=0)
 
 
@@ -215,23 +227,13 @@ dump_boxes['it1'] = CSX.AddProbe( 'it1', 1 )
 '''
 interp1d: returns a function that interpolates between the values x, y passed
 '''
-interpl_y1  = interp1d( mesh.y, np.arange(0,mesh.y.size, 1), kind='nearest', fill_value="extrapolate")
-yidx1 = int(interpl_y1(-MSL_dy/2)) # width / 2
-interpl_y2  = interp1d( mesh.y, np.arange(0,mesh.y.size, 1), kind='nearest', fill_value="extrapolate")
-yidx2 = int(interpl_y2(MSL_dy/2)) # width / 2
+yidx1 = int(interpl_y(-MSL_dy/2)) # width / 2
+yidx2 = int(interpl_y(MSL_dy/2)) # width / 2
+zidx1 = int(interpl_z(substrate_dz)) # height
+zidx2 = int(interpl_z(substrate_dz+MSL_dz)) # height+1
 
-ydelta = diff(mesh.y)
-
-interpl_z1  = interp1d( mesh.z, np.arange(0,mesh.z.size, 1), kind='nearest', fill_value="extrapolate")
-zidx1 = int(interpl_z1(substrate_dz)) # height
-interpl_z2  = interp1d( mesh.z, np.arange(0,mesh.z.size, 1), kind='nearest', fill_value="extrapolate")
-zidx2 = int(interpl_z2(substrate_dz+MSL_dz)) # height+1
-
-zdelta = diff(mesh.z)
-xdelta = diff(mesh.x)
-
-start_it1 = [mesh.x[xidx_ut1]+xdelta[xidx_ut1]/2, mesh.y[yidx1]-ydelta[yidx1-1]/2, mesh.z[zidx1]-zdelta[zidx1-1]/2]
-stop_it1 = [mesh.x[xidx_ut1]+xdelta[xidx_ut1]/2,  mesh.y[yidx2]+ydelta[yidx2]/2,   mesh.z[zidx2]+zdelta[zidx2]/2]
+start_it1 = [mesh.x[xidx]+xdelta[xidx]/2, mesh.y[yidx1]-ydelta[yidx1-1]/2, mesh.z[zidx1]-zdelta[zidx1-1]/2]
+stop_it1 = [mesh.x[xidx]+xdelta[xidx]/2,  mesh.y[yidx2]+ydelta[yidx2]/2,   mesh.z[zidx2]+zdelta[zidx2]/2]
 print(f"it1: {start_it1} -> {stop_it1}")
 
 dump_boxes['it1'].AddBox(start_it1, stop_it1, priority=0)
