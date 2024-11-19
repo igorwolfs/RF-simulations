@@ -204,39 +204,59 @@ xdelta = diff(mesh.x)
 ydelta = diff(mesh.y)
 zdelta = diff(mesh.z)
 
-### * PORT 1
-## define voltage calc box
-dump_boxes['ut1'] = CSX.AddProbe(  'ut1', 0 )
-xidx = int(interpl_x(MSL_dx/2)) # length / 2
+### * PORT IN
+in_xidx = int(interpl_x(MSL_dx/4)) # length / 4
+in_yidx1 = int(interpl_y(-MSL_dy/2)) # width / 2
+in_yidx2 = int(interpl_y(MSL_dy/2)) # width / 2
+in_zidx1 = int(interpl_z(substrate_dz)) # height
+in_zidx2 = int(interpl_z(substrate_dz+MSL_dz)) # height+1
 
-ut1_start = [mesh.x[xidx], 0, substrate_dz]
-ut1_stop  = [mesh.x[xidx], 0, 0]
-dump_boxes['ut1'].AddBox(ut1_start, ut1_stop, priority=0)
+
+## define voltage calc box
+dump_boxes['in_ut1'] = CSX.AddProbe(  'in_ut1', 0 )
+in_ut1_start = [mesh.x[in_xidx], 0, substrate_dz]
+in_ut1_stop  = [mesh.x[in_xidx], 0, 0]
+dump_boxes['in_ut1'].AddBox(in_ut1_start, in_ut1_stop, priority=0)
 
 # add a second voltage probe to compensate space offset between voltage and current
-dump_boxes['ut2'] = CSX.AddProbe(  'ut2', 0 )
-ut2_start = [mesh.x[xidx+1], 0, substrate_dz]
-ut2_stop  = [mesh.x[xidx+1], 0, 0]
-dump_boxes['ut2'].AddBox(ut2_start, ut2_stop, priority=0)
-
+dump_boxes['in_ut2'] = CSX.AddProbe(  'in_ut2', 0 )
+in_ut2_start = [mesh.x[in_xidx+1], 0, substrate_dz]
+in_ut2_stop  = [mesh.x[in_xidx+1], 0, 0]
+dump_boxes['in_ut2'].AddBox(in_ut2_start, in_ut2_stop, priority=0)
 
 ## define current calc box
 # current calc boxes will automatically snap to the next dual mesh-line
-dump_boxes['it1'] = CSX.AddProbe( 'it1', 1 )
+dump_boxes['in_it1'] = CSX.AddProbe( 'in_it1', 1 )
+in_start_it1 = [mesh.x[in_xidx]+xdelta[in_xidx]/2, mesh.y[in_yidx1]-ydelta[in_yidx1-1]/2, mesh.z[in_zidx1]-zdelta[in_zidx1-1]/2]
+in_stop_it1 = [mesh.x[in_xidx]+xdelta[in_xidx]/2,  mesh.y[in_yidx2]+ydelta[in_yidx2]/2,   mesh.z[in_zidx2]+zdelta[in_zidx2]/2]
+dump_boxes['in_it1'].AddBox(in_start_it1, in_stop_it1, priority=0)
 
-'''
-interp1d: returns a function that interpolates between the values x, y passed
-'''
-yidx1 = int(interpl_y(-MSL_dy/2)) # width / 2
-yidx2 = int(interpl_y(MSL_dy/2)) # width / 2
-zidx1 = int(interpl_z(substrate_dz)) # height
-zidx2 = int(interpl_z(substrate_dz+MSL_dz)) # height+1
+### * PORT OUT
+out_xidx = int(interpl_x(MSL_dx*3/4)) # length / 4
+out_yidx1 = int(interpl_y(-MSL_dy/2)) # width / 2
+out_yidx2 = int(interpl_y(MSL_dy/2)) # width / 2
+out_zidx1 = int(interpl_z(substrate_dz)) # height
+out_zidx2 = int(interpl_z(substrate_dz+MSL_dz)) # height+1
 
-start_it1 = [mesh.x[xidx]+xdelta[xidx]/2, mesh.y[yidx1]-ydelta[yidx1-1]/2, mesh.z[zidx1]-zdelta[zidx1-1]/2]
-stop_it1 = [mesh.x[xidx]+xdelta[xidx]/2,  mesh.y[yidx2]+ydelta[yidx2]/2,   mesh.z[zidx2]+zdelta[zidx2]/2]
-print(f"it1: {start_it1} -> {stop_it1}")
+## define voltage calc box
+dump_boxes['out_ut1'] = CSX.AddProbe(  'out_ut1', 0 )
+out_ut1_start = [mesh.x[out_xidx], 0, substrate_dz]
+out_ut1_stop  = [mesh.x[out_xidx], 0, 0]
+dump_boxes['out_ut1'].AddBox(out_ut1_start, out_ut1_stop, priority=0)
 
-dump_boxes['it1'].AddBox(start_it1, stop_it1, priority=0)
+# add a second voltage probe to compensate space offset between voltage and current
+dump_boxes['out_ut2'] = CSX.AddProbe(  'out_ut2', 0 )
+out_ut2_start = [mesh.x[out_xidx+1], 0, substrate_dz]
+out_ut2_stop  = [mesh.x[out_xidx+1], 0, 0]
+dump_boxes['out_ut2'].AddBox(out_ut2_start, out_ut2_stop, priority=0)
+
+## define current calc box
+# current calc boxes will automatically snap to the next dual mesh-line
+dump_boxes['out_it1'] = CSX.AddProbe( 'out_it1', 1 )
+out_start_it1 = [mesh.x[out_xidx]+xdelta[out_xidx]/2, mesh.y[out_yidx1]-ydelta[out_yidx1-1]/2, mesh.z[out_zidx1]-zdelta[out_zidx1-1]/2]
+out_stop_it1 = [mesh.x[out_xidx]+xdelta[out_xidx]/2,  mesh.y[out_yidx2]+ydelta[out_yidx2]/2,   mesh.z[out_zidx2]+zdelta[out_zidx2]/2]
+dump_boxes['out_it1'].AddBox(out_start_it1, out_stop_it1, priority=0)
+
 
 #######################################################################################################################################
 # RUN
@@ -262,43 +282,70 @@ FDTD.Run(Sim_Path, cleanup=True, debug_material=True, debug_pec=True, debug_oper
 from openEMS.ports import UI_data
 freq = linspace( f0-fc, f0+fc, 501)
 
-U = UI_data(['ut1', 'ut2', 'et'], Sim_Path, freq) # Time domain/freq domain voltage
-I = UI_data(['it1'], Sim_Path, freq) # time domain / freq domain current (half time step offset is corrected? in octave?)
+E_field = UI_data(['et'], Sim_Path, freq)
+U_in = UI_data(['in_ut1', 'in_ut2'], Sim_Path, freq) # Time domain/freq domain voltage
+U_out = UI_data(['out_ut1', 'out_ut2'], Sim_Path, freq) # Time domain/freq domain voltage
+I_in = UI_data(['in_it1'], Sim_Path, freq) # time domain / freq domain current (half time step offset is corrected? in octave?)
+I_out = UI_data(['out_it1'], Sim_Path, freq) # time domain / freq domain current (half time step offset is corrected? in octave?)
 
-## Plot time domain voltage
-
-
-
-ut1_t, ut1_V = U.ui_time[0], U.ui_val[0] # ut1 time voltage 
-et_t, et_V = U.ui_time[2], U.ui_val[2] # et time electric field
 
 # Plotting
 # * figure()
 fig, ax1 = plt.subplots()
 ax2 = ax1.twinx()
-ax1.plot(ut1_t, ut1_V, 'g-', linewidth=2, label='$ut1$')
-ax2.plot(et_t, et_V, 'b-', linewidth=2, label='$et$')
+ax1.plot(U_in.ui_time[0], U_in.ui_val[0], 'g-', linewidth=2, label='$ut1$')
+ax2.plot(U_out.ui_time[1], U_out.ui_val[1], 'b-', linewidth=2, label='$et$')
 
 ax1.set_xlabel('time (t / ns)')
 ax1.set_ylabel('Volts (V)', color='g')
-ax2.set_ylabel('E-field (V/m)', color='b')
+ax2.set_ylabel('Volts (V)', color='b')
 
 plt.savefig(os.path.join(Plot_Path, 'voltages.pdf'))
 plt.show()
 
 
 ## Characteristic impedance calculation
-U = (U.ui_f_val[0] + U.ui_f_val[1]) / 2
-Z = U / I.ui_f_val[0]
+# input
+u_in_val_f = (U_in.ui_f_val[0] + U_in.ui_f_val[1]) / 2
+Z_in = u_in_val_f / I_in.ui_f_val[0]
+
+
+# output
+u_out_val_f = (U_out.ui_f_val[0] + U_in.ui_f_val[1]) / 2
+Z_out = u_out_val_f / I_out.ui_f_val[0]
 
 
 fig, ax1 = plt.subplots()
 ax2 = ax1.twinx()
-ax1.plot(freq*1e-6, real(Z), 'g-', linewidth=2, label='$\Re\{Z\}$')
-ax1.plot(freq*1e-6, imag(Z), 'b-', linewidth=2, label='$\Im\{Z\}$')
+ax1.plot(freq*1e-6, abs(Z_in), 'g-', linewidth=2, label='$\Z_in\{Z\}$')
+ax1.plot(freq*1e-6, abs(Z_out), 'b-', linewidth=2, label='$\Z_out\{Z\}$')
 ax1.set_xlabel('frequency [Hz]')
-ax1.set_ylabel('Re [Ohm]', color='g')
-ax2.set_ylabel('Im [Ohm]', color='b')
+ax1.set_ylabel('Z_in [Ohm]', color='g')
+ax2.set_ylabel('Z_out [Ohm]', color='b')
 ax2.set_ylim(ax1.get_ylim())
 plt.savefig(os.path.join(Plot_Path, 'impedance.pdf'))
+plt.show()
+
+## S-Parameters
+# MSL Length: 100 mm
+# eps: 3.66
+Z_ref = 50
+
+a1 = 1/(2*sqrt(Z_ref)) * (u_in_val_f + Z_ref * I_in.ui_f_val[0])
+b1 = 1/(2*sqrt(Z_ref)) * (u_in_val_f - Z_ref * I_in.ui_f_val[0])
+a2 = 0
+b2 = 1/(2*sqrt(Z_ref)) * (u_out_val_f - Z_ref * I_in.ui_f_val[0])
+
+s11 = (b1 / a1)
+s21 = (b2 / a1)
+
+fig, ax1 = plt.subplots()
+ax2 = ax1.twinx()
+ax1.plot(freq*1e-6, 20*log10(abs(s11)), 'g-', linewidth=2, label='$S_{11}$')
+ax1.plot(freq*1e-6, 20*log10(abs(s21)), 'b-', linewidth=2, label='$S_{21}$')
+ax1.set_xlabel('frequency [Hz]')
+ax1.set_ylabel('S11', color='g')
+ax2.set_ylabel('S21', color='b')
+ax2.set_ylim(ax1.get_ylim())
+plt.savefig(os.path.join(Plot_Path, 's_parameters.pdf'))
 plt.show()
