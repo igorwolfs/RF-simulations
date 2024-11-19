@@ -5,6 +5,10 @@ It is VERY IMPORTANT to always have a mesh line of:
 - 2*resolution / 3 outside of the conductor
 - resolution/3 inside the conductor
 
+## 3D geometry
+### Thickness
+IMPORTANT: the copper layer is positioned ON TOP of the dielectric, **NOT IN** the dielectric. 
+
 ## Ports
 ### Lumped port
 **Lumped port resistance**
@@ -28,7 +32,13 @@ Because of bad port dimensions, regions are excited which don't correspond to th
 > - in a plane connecting the 2 conductors (the microstrip and conducting plane), WITHOUT overlapping with one of the conductors.
 > - It's width should be a bit bigger than the signal line width.
 
+**Lumped Port Measurements**
+Important to note is that everything in a lumped port happens where the lumped port is positioned, so that includes
+- The current measurement (in the width direction)
+- The voltage measurement (in the height direction)
+- The excitation (in the width/height plane)
 
+Not sure if this is the place of excitation is an optimal location for the measurement of signals.
 
 ### Source
 https://innovationspace.ansys.com/courses/wp-content/uploads/sites/5/2021/07/HFSS_GS_2020R2_EN_LE6_Port_Basics.pdf
@@ -70,12 +80,26 @@ When calculating power, using current and voltage we normalize all voltages and 
 This number of 50 ohms is arbitrary and can be chosen as any number. It is chosen however since in RF-circuits most of the port impedances are 50 ohms, so it makes calculations easier if the goal is to match everything to 50 ohms.
 
 ### 2-port network (S-parameter calculations)
-- port 1: input power a1, reflection power b1
-- port 2: input power a2, reflection power b2
+We can split the voltage signal at a port into 2 parts
+- Outgoing (forward) wave V+(x), equal to a(x)
+- Incoming (reflected) wave V-(x), equal to b(x)
 
-- S11: reflected / incoming voltage to port 1
-- S21: reflected voltage at port 2 (so b2) / incoming voltage at port 1 (There is no excitation at port 1) 
+The voltage at the port is the sum of the 2 parts:  V(x) = V+(x) + V-(x)
 
+The current is equal to the net voltage (so the difference) divided by the feed impedance Z_0: I(x) = V+(x) / Z_ref - V-(x) / Z_0
+
+**Feed impedance VS reference impedance**
+
+We can assume safely however that the feed impedance is equal to the reference impedance. Even if that assumption is incorrect the S-parameter values can still be compared relative to one another.
+
+**Calculating S-Parameters**
+
+Now after normalizing, we can write a(x) and b(x) as a linear combination of V(x) and I(x)
+
+- a(x) = 0.5 / sqrt(Z_ref) * (V(x) + Z_ref*I(x))
+- b(x) = 0.5 / sqrt(Z_ref) * (V(x) - Z_ref*I(x))
+
+and since:
 
 $b1 = S11 * a1 + S21 * a2$
 
@@ -87,16 +111,23 @@ $b2 = S22 * a2 + S12 * a1$
 => If no excitation applied to port 2:
 $S12 = b2 / a1$
 
+*note: a1 can be assumed 0 when no reflections happen back to port 1 (so impedance perfectly matched / absorption condition), a2 can be assumed 0 when no reflection happen back to port 2.*
 
+**Power in forward / Reverse wave**
+- Power in forward wave: (1/2) * a * a^
+- Power in reverse wave: (1/2) * b * b^
 
 ### Source
 https://cds.cern.ch/record/1415639/files/p67.pdf
+https://web.ece.ucsb.edu/~long/ece145a/Notes4_Sparams.pdf
 
 # Questions
 ## What determines the S-parameter variation?
 ### Context
 We see that there is a S11 (reflection) parameter peak and an S21 (energy passed from port 1 to port 2) parameter drop around 3.5 GHz for the "structured.py".
 - We set the load impedance to 50 ohms for port calculations
+
+Note that whenever you see S-parameter shakiness or impedance shakiness which isn't to be expected, it's probably because of unwanted reflections, non-ideal absorption etc..
 
 ## Why is the S-parameter calculated with a reference impedance of 50 ohms, but the ports have an impedance of 0 ohms? Why not another arbitrary number?
 ### Context

@@ -18,17 +18,17 @@ APPCSXCAD_CMD = '~/opt/openEMS/bin/AppCSXCAD'
 from openEMS.physical_constants import *
 unit = 1e-6 # specify everything in um
 
-## prepare simulation folder
+## SIMULATION FOLDER SETUP
 currDir = os.getcwd()
-file_name = 'structured'
+file_name = os.path.basename(__file__).strip('.py')
 Plot_Path = os.path.join(currDir, file_name)
 Sim_Path = os.path.join(Plot_Path, file_name)
-Sim_CSX = 'MSL_copper.xml'
-if os.path.exists(Plot_Path):
-	shutil.rmtree(Plot_Path)   # clear previous directory
-	os.mkdir(Plot_Path)    # create empty simulation folder
-	os.mkdir(Sim_Path)    # create empty simulation folder
-
+if not (os.path.exists(Plot_Path)):
+	os.mkdir(Plot_Path)
+	os.mkdir(Sim_Path)
+else:
+	shutil.rmtree(Sim_Path)
+	os.mkdir(Sim_Path)
 
 
 ## setup FDTD parameter & excitation function
