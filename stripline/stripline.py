@@ -38,7 +38,8 @@ if sim_enabled:
 ## setup FDTD parameter & excitation function
 CSX = ContinuousStructure()
 # min_decrement = 1e-5 # equivalent to -50 dB
-FDTD = openEMS()
+max_steps = 6000
+FDTD = openEMS(NrTS=max_steps)
 FDTD.SetCSX(CSX)
 #######################################################################################################################################
 # BOUNDARY CONDITIONS
@@ -116,7 +117,7 @@ materialList['RO4350B'].AddBox(subs_start, subs_stop, priority=subs_priority)
 ## EXCITATION DEFINITION
 print(f"WARNING, THE Excitation here might not be on a grid")
 port_dx = 10*resolution_u
-exc_start = [port_dx, -SL_dy/2 , substrate_dz]
+exc_start = [port_dx, -SL_dy/2 , substrate_dz/2]
 exc_stop  = [port_dx,  SL_dy/2 , 0]
 exc_priority = 10
 excitation = CSX.AddExcitation('excite', exc_type=0, exc_val=[0, 0, -1])
@@ -160,8 +161,8 @@ from scipy.interpolate import interp1d
 
 dump_boxes = {}
 ## define dump boxes
-et_start = [mesh.x[0], mesh.y[0], substrate_dz/2]
-et_stop  = [mesh.x[-1], mesh.y[-1], substrate_dz/2]
+et_start = [mesh.x[0], mesh.y[0], 0]
+et_stop  = [mesh.x[-1], mesh.y[-1], 0]
 dump_boxes['et'] = CSX.AddDump( 'Et_', dump_mode=2 ) # cell interpolated
 dump_boxes['et'].AddBox(et_start, et_stop, priority=0 )
 dump_boxes['ht'] = CSX.AddDump(  'Ht_', dump_type=1, dump_mode=2 ) # cell interpolated
@@ -177,21 +178,21 @@ ydelta = diff(mesh.y)
 zdelta = diff(mesh.z)
 
 ### * PORT IN
-in_xidx =  int(interpl_x(SL_dx/6)) #SL_dx/4)) 		# length / 4
+in_xidx =  int(interpl_x(SL_dx/4)) 		# length / 4
 in_yidx1 = int(interpl_y(-SL_dy/2)) 	# width / 2
 in_yidx2 = int(interpl_y(SL_dy/2)) 	# width / 2
-in_zidx = int(interpl_z(substrate_dz)) 	# height
+in_zidx = int(interpl_z(0)) 	# height
 
 
 ## define voltage calc box
 dump_boxes['in_ut1'] = CSX.AddProbe(  'in_ut1', 0 )
-in_ut1_start = [mesh.x[in_xidx], 0, substrate_dz]
+in_ut1_start = [mesh.x[in_xidx], 0, substrate_dz/2]
 in_ut1_stop  = [mesh.x[in_xidx], 0, 0]
 dump_boxes['in_ut1'].AddBox(in_ut1_start, in_ut1_stop, priority=0)
 
 # add a second voltage probe to compensate space offset between voltage and current
 dump_boxes['in_ut2'] = CSX.AddProbe(  'in_ut2', 0 )
-in_ut2_start = [mesh.x[in_xidx+1], 0, substrate_dz]
+in_ut2_start = [mesh.x[in_xidx+1], 0, substrate_dz/2]
 in_ut2_stop  = [mesh.x[in_xidx+1], 0, 0]
 dump_boxes['in_ut2'].AddBox(in_ut2_start, in_ut2_stop, priority=0)
 
@@ -208,17 +209,17 @@ dump_boxes['in_it1'].AddBox(in_start_it1, in_stop_it1, priority=0)
 out_xidx  = int(interpl_x(SL_dx - SL_dx/6)) #int(interpl_x(SL_dx*3/4))   # length / 4
 out_yidx1 = int(interpl_y(-SL_dy/2))    # width / 2
 out_yidx2 = int(interpl_y(SL_dy/2))     # width / 2
-out_zidx  = int(interpl_z(substrate_dz)) # height
+out_zidx  = int(interpl_z(0)) # height
 
 ## define voltage calc box
 dump_boxes['out_ut1'] = CSX.AddProbe(  'out_ut1', 0 )
-out_ut1_start = [mesh.x[out_xidx], 0, substrate_dz]
+out_ut1_start = [mesh.x[out_xidx], 0, substrate_dz/2]
 out_ut1_stop  = [mesh.x[out_xidx], 0, 0]
 dump_boxes['out_ut1'].AddBox(out_ut1_start, out_ut1_stop, priority=0)
 
 # add a second voltage probe to compensate space offset between voltage and current
 dump_boxes['out_ut2'] = CSX.AddProbe(  'out_ut2', 0 )
-out_ut2_start = [mesh.x[out_xidx+1], 0, substrate_dz]
+out_ut2_start = [mesh.x[out_xidx+1], 0, substrate_dz/2]
 out_ut2_stop  = [mesh.x[out_xidx+1], 0, 0]
 dump_boxes['out_ut2'].AddBox(out_ut2_start, out_ut2_stop, priority=0)
 
@@ -306,7 +307,6 @@ plt.savefig(os.path.join(Plot_Path, 's_parameters.pdf'))
 plt.show()
 
 
-'''
 ## IMPEDANCE
 Z_in = uf_in_tot / if_in_tot
 Z_out = uf_out_tot / if_out_tot
@@ -338,6 +338,10 @@ ax2.set_ylabel('Volts (V)', color='b')
 
 plt.savefig(os.path.join(Plot_Path, 'voltages.pdf'))
 plt.show()
+
+
+'''
+
 
 
 ## UF_TOT DEBUGGING PLOTS
