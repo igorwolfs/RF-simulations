@@ -17,6 +17,7 @@ from openEMS import openEMS
 
 APPCSXCAD_CMD = '~/opt/openEMS/bin/AppCSXCAD'
 
+sim_enabled = False
 
 ### CONSTANTS
 from openEMS.physical_constants import *
@@ -28,12 +29,14 @@ currDir = os.getcwd()
 file_name = os.path.basename(__file__).strip('.py')
 Plot_Path = os.path.join(currDir, file_name)
 Sim_Path = os.path.join(Plot_Path, file_name)
-if not (os.path.exists(Plot_Path)):
-	os.mkdir(Plot_Path)
-	os.mkdir(Sim_Path)
-else:
-	shutil.rmtree(Sim_Path)
-	os.mkdir(Sim_Path)
+
+if sim_enabled:
+	if not (os.path.exists(Plot_Path)):
+		os.mkdir(Plot_Path)
+		os.mkdir(Sim_Path)
+	else:
+		shutil.rmtree(Sim_Path)
+		os.mkdir(Sim_Path)
 
 
 ## setup FDTD parameter & excitation function
@@ -115,7 +118,7 @@ substrate_priority = 1
 #######################################################################################################################################
 
 f0 = 2e9 # center frequency
-fc = 1e9 # 10 dB corner frequency (in this case 1e9 Hz - 3e9 Hz)
+fc = 1.5e9 # 10 dB corner frequency (in this case 1e9 Hz - 3e9 Hz)
 
 FDTD.SetGaussExcite( f0, fc)
 
@@ -270,8 +273,8 @@ CSX.Write2XML(CSX_file)
 from CSXCAD import AppCSXCAD_BIN
 os.system(AppCSXCAD_BIN + ' "{}"'.format(CSX_file))
 
-# FDTD.Run(Sim_Path, cleanup=True)
-FDTD.Run(Sim_Path, cleanup=True, debug_material=True, debug_pec=True, debug_operator=True, debug_boxes=True, debug_csx=True, verbose=3)
+if sim_enabled:
+	FDTD.Run(Sim_Path, cleanup=True, debug_material=True, debug_pec=True, debug_operator=True, debug_boxes=True, debug_csx=True, verbose=3)
 
 
 #######################################################################################################################################
@@ -293,8 +296,10 @@ I_out = UI_data(['out_it1'], Sim_Path, freq) # time domain / freq domain current
 # * figure()
 fig, ax1 = plt.subplots()
 ax2 = ax1.twinx()
-ax1.plot(U_in.ui_time[0], U_in.ui_val[0], 'g-', linewidth=2, label='$ut1$')
-ax2.plot(U_out.ui_time[1], U_out.ui_val[1], 'b-', linewidth=2, label='$et$')
+ax3 = ax1.twinx()
+ax1.plot(U_in.ui_time[0], U_in.ui_val[0], 'g-', linewidth=2, label='$in_ut$')
+ax2.plot(U_out.ui_time[0], U_out.ui_val[0], 'b-', linewidth=2, label='$out_ut$')
+ax3.plot(E_field.ui_time[0], E_field.ui_val[0], 'y-', linewidth=2)
 
 ax1.set_xlabel('time (t / ns)')
 ax1.set_ylabel('Volts (V)', color='g')
@@ -311,7 +316,7 @@ Z_in = u_in_val_f / I_in.ui_f_val[0]
 
 
 # output
-u_out_val_f = (U_out.ui_f_val[0] + U_in.ui_f_val[1]) / 2
+u_out_val_f = (U_out.ui_f_val[0] + U_out.ui_f_val[1]) / 2
 Z_out = u_out_val_f / I_out.ui_f_val[0]
 
 
@@ -331,13 +336,35 @@ plt.show()
 # eps: 3.66
 Z_ref = 50
 
+# Excitation applied at port 1 only:
 a1 = 1/(2*sqrt(Z_ref)) * (u_in_val_f + Z_ref * I_in.ui_f_val[0])
 b1 = 1/(2*sqrt(Z_ref)) * (u_in_val_f - Z_ref * I_in.ui_f_val[0])
-a2 = 0
-b2 = 1/(2*sqrt(Z_ref)) * (u_out_val_f - Z_ref * I_in.ui_f_val[0])
+a2 = 1/(2*sqrt(Z_ref)) * (u_out_val_f + Z_ref * I_out.ui_f_val[0])
+b2 = 1/(2*sqrt(Z_ref)) * (u_out_val_f - Z_ref * I_out.ui_f_val[0])
+
+
+
+print(f"A1: {abs(a1)}")
+print(f"A2: {abs(a2)}")
 
 s11 = (b1 / a1)
 s21 = (b2 / a1)
+
+
+# Base speed of light
+base_speed = C0 / sqrt(substrate_eps)
+# Frequency 	-> f = v / lambda
+# n * lambda / 2 = 100 mm (so phase shift at 180 degrees has to happen at 100 mm for a multiple of the wavlength)
+# lambda = (100 * 2 / n) | f = (v * n) / (100e-3 * 2)
+freq_list = [base_speed * 1 / (200e-3)]
+while (freq_list[-1] < f0+fc):
+	freq_list.append(base_speed * (len(freq_list)+1) / (200e-3))
+
+freq_list = np.array(freq_list) / 1e9
+print(f"freq_list: {freq_list}, max freq: {(f0+fc) / 1e9}")
+# wave_angle = (wavelength / (100e-3))
+
+# print(f"wave_angle: {dist_180}")
 
 fig, ax1 = plt.subplots()
 ax2 = ax1.twinx()

@@ -165,6 +165,26 @@ dump_boxes['et'].AddBox(et_start, et_stop, priority=0 )
 dump_boxes['ht'] = CSX.AddDump(  'Ht_', dump_type=1, dump_mode=2 ) # cell interpolated
 dump_boxes['ht'].AddBox(et_start, et_stop, priority=0 )
 
+### * Grid functions for interpolation
+
+'''
+interp1d: returns a function that interpolates between the values x, y passed
+'''
+interpl_x  = interp1d( mesh.x, np.arange(0,mesh.x.size, 1), kind='nearest', fill_value="extrapolate")
+interpl_y  = interp1d( mesh.y, np.arange(0,mesh.y.size, 1), kind='nearest', fill_value="extrapolate")
+interpl_z = interp1d( mesh.z, np.arange(0,mesh.z.size, 1), kind='nearest', fill_value="extrapolate")
+
+xdelta = diff(mesh.x)
+ydelta = diff(mesh.y)
+zdelta = diff(mesh.z)
+
+xidx = int(interpl_x(MSL_dx/2)) # length / 2
+yidx1 = int(interpl_y(-MSL_dy/2)) # width / 2
+yidx2 = int(interpl_y(MSL_dy/2)) # width / 2
+zidx1 = int(interpl_z(substrate_dz)) # height
+zidx2 = int(interpl_z(substrate_dz+MSL_dz)) # height+1
+
+
 ## define voltage calc box
 # voltage calc boxes will automatically snap to the next mesh-line
 # z -> x
@@ -172,19 +192,16 @@ dump_boxes['ht'].AddBox(et_start, et_stop, priority=0 )
 # y -> z
 
 dump_boxes['ut1'] = CSX.AddProbe(  'ut1', 0 )
-interpl_x  = interp1d( mesh.x, np.arange(0,mesh.x.size, 1), kind='nearest', fill_value="extrapolate")
-xidx_ut1 = int(interpl_x(MSL_dx/2)) # length / 2
-
-ut1_start = [mesh.x[xidx_ut1], 0, substrate_dz]
-ut1_stop  = [mesh.x[xidx_ut1], 0, 0]
+ut1_start = [mesh.x[xidx], 0, substrate_dz]
+ut1_stop  = [mesh.x[xidx], 0, 0]
 print(f"ut1: {ut1_start} -> {ut1_stop}")
 dump_boxes['ut1'].AddBox(ut1_start, ut1_stop, priority=0)
 
 # add a second voltage probe to compensate space offset between voltage and current
 
 dump_boxes['ut2'] = CSX.AddProbe(  'ut2', 0 )
-ut2_start = [mesh.x[xidx_ut1+1], 0, substrate_dz]
-ut2_stop  = [mesh.x[xidx_ut1+1], 0, 0]
+ut2_start = [mesh.x[xidx+1], 0, substrate_dz]
+ut2_stop  = [mesh.x[xidx+1], 0, 0]
 print(f"ut2: {ut2_start} -> {ut2_stop}")
 dump_boxes['ut2'].AddBox(ut2_start, ut2_stop, priority=0)
 
@@ -192,29 +209,9 @@ dump_boxes['ut2'].AddBox(ut2_start, ut2_stop, priority=0)
 ## define current calc box
 # current calc boxes will automatically snap to the next dual mesh-line
 dump_boxes['it1'] = CSX.AddProbe( 'it1', 1 )
-
-'''
-interp1d: returns a function that interpolates between the values x, y passed
-'''
-interpl_y1  = interp1d( mesh.y, np.arange(0,mesh.y.size, 1), kind='nearest', fill_value="extrapolate")
-yidx1 = int(interpl_y1(-MSL_dy/2)) # width / 2
-interpl_y2  = interp1d( mesh.y, np.arange(0,mesh.y.size, 1), kind='nearest', fill_value="extrapolate")
-yidx2 = int(interpl_y2(MSL_dy/2)) # width / 2
-
-ydelta = diff(mesh.y)
-
-interpl_z1  = interp1d( mesh.z, np.arange(0,mesh.z.size, 1), kind='nearest', fill_value="extrapolate")
-zidx1 = int(interpl_z1(substrate_dz)) # height
-interpl_z2  = interp1d( mesh.z, np.arange(0,mesh.z.size, 1), kind='nearest', fill_value="extrapolate")
-zidx2 = int(interpl_z2(substrate_dz+MSL_dz)) # height+1
-
-zdelta = diff(mesh.z)
-xdelta = diff(mesh.x)
-
-start_it1 = [mesh.x[xidx_ut1]+xdelta[xidx_ut1]/2, mesh.y[yidx1]-ydelta[yidx1-1]/2, mesh.z[zidx1]-zdelta[zidx1-1]/2]
-stop_it1 = [mesh.x[xidx_ut1]+xdelta[xidx_ut1]/2,  mesh.y[yidx2]+ydelta[yidx2]/2,   mesh.z[zidx2]+zdelta[zidx2]/2]
+start_it1 = [mesh.x[xidx]+xdelta[xidx]/2, mesh.y[yidx1]-ydelta[yidx1-1]/2, mesh.z[zidx1]-zdelta[zidx1-1]/2]
+stop_it1 = [mesh.x[xidx]+xdelta[xidx]/2,  mesh.y[yidx2]+ydelta[yidx2]/2,   mesh.z[zidx2]+zdelta[zidx2]/2]
 print(f"it1: {start_it1} -> {stop_it1}")
-
 dump_boxes['it1'].AddBox(start_it1, stop_it1, priority=0)
 
 #######################################################################################################################################
