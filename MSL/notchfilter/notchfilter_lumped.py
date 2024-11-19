@@ -1,17 +1,25 @@
 '''
 # * GOAL:
 Create a lumped port excited MSL similar to the MSL port excited MSL.
-The MSL does NOT have a z-dimension.
+The MSL DOES have a z-dimension.
+In order to simulate this decently we have to actually 
 
 # * RESULT:
 Success, the S-parameters and impedance are vastly different but within the realm of possibility 
 Possible reasons:
 - The source and load impedance aren't matched
 - Reflections make the signal go back and forth
+- Excitation is applied at the same place where measurement happens.
+- There is only  single voltage probe and a single current probe, so not taking into account the stacking of the grid.
+	- The better option would be to have 2 voltage probes.
 
 The MSL port doesn't have this issue, because
 - it is continuous while defining excitation only in one place, so there is no change in impedance along it while it is unavoidable in the lumped port
 - it has no resistivity by default.
+
+# * ACTION
+
+We'll try to 
 '''
 
 
@@ -82,17 +90,15 @@ FDTD.SetGaussExcite( f_max/2, f_max/2 )
 materialList = {}
 
 ## MATERIAL - PEC
-#! Use the jlcpcb impedance calculator to determine dimensions here (https://jlcpcb.com/pcb-impedance-calculator)
 materialList['PEC'] = CSX.AddMetal( 'PEC' )
-MSL_dx = 25e3 # 50 mm
-MSL_dy = 156   # 0.156 mm
-MSL_dz = 35    # 0.035 mm
-stub_dy = 6e3  # 6 mm
+MSL_dx = 100000 # 5 cm
+MSL_dy = 600 # 0.6 mm
+stub_dy = 12e3 # 12 mm
 
 
 ## MATERIAL - RO4350B
 substrate_epr = 3.66
-substrate_thickness = 99 # 0.099 mm
+substrate_thickness = 254
 materialList['RO4350B'] = CSX.AddMaterial( 'RO4350B', epsilon=substrate_epr)
 
 wavelength_min = (C0/f_max) *  (1/(sqrt(substrate_epr)))
@@ -105,24 +111,24 @@ from CSXCAD.SmoothMeshLines import SmoothMeshLines
 
 ## PEC Stub Definition in (the XY-plane)
 start_pec_stub = [-MSL_dy/2,  MSL_dy/2, substrate_thickness]
-stop_pec_stub  = [ MSL_dy/2,  MSL_dy/2+stub_dy, substrate_thickness+MSL_dz]
+stop_pec_stub  = [ MSL_dy/2,  MSL_dy/2+stub_dy, substrate_thickness]
 materialList['PEC'].AddBox(start_pec_stub, stop_pec_stub, priority=10 )
 
 start_pec = [-MSL_dx/2,  -MSL_dy/2, substrate_thickness]
-stop_pec  = [ MSL_dx/2,  MSL_dy/2, substrate_thickness+MSL_dz]
+stop_pec  = [ MSL_dx/2,  MSL_dy/2, substrate_thickness]
 materialList['PEC'].AddBox(start_pec, stop_pec, priority=10 )
 
 ## DIELECTRIC Definition
-subs_start = [-MSL_dx/2, -10*MSL_dy, 0]
-subs_stop  = [+MSL_dx/2, +10*MSL_dy+stub_dy, substrate_thickness]
+subs_start = [-MSL_dx/2, -15*MSL_dy, 0]
+subs_stop  = [+MSL_dx/2, +15*MSL_dy+stub_dy, substrate_thickness]
 materialList['RO4350B'].AddBox(subs_start, subs_stop )
 
 ## Setup Geometry & Mesh
-resolution_u = wavelength_min_u / 50 # resolution of lambda/20
+resolution_u = wavelength_min_u / 50 # resolution of lambda/50
 ## * Do manual meshing X-DIR
-third_mesh_xy = array([2*resolution_u/3, -resolution_u/3])/4
+third_mesh = array([2*resolution_u/3, -resolution_u/3])/4
 # Add 2/3rds x resolution on the outside and 1/3rd x resolution on the inside of the MSL
-mesh.x = np.concatenate((mesh.x, np.array([0.0]), MSL_dy/2+third_mesh_xy, -MSL_dy/2-third_mesh_xy))
+mesh.x = np.concatenate((mesh.x, np.array([0.0]), MSL_dy/2+third_mesh, -MSL_dy/2-third_mesh))
 mesh.x = SmoothMeshLines(mesh.x, resolution_u/4)
 
 # Add X-edges to the simulation
@@ -130,23 +136,16 @@ mesh.x = np.concatenate((mesh.x, np.array([-MSL_dx/2, MSL_dx/2])))
 
 ## * Do manual meshing Y-DIR
 # Add 2/3rds x resolution on the outside and 1/3rd x resolution on the inside of the MSL
-mesh.y = np.concatenate((mesh.y, np.array([0.0]), MSL_dy/2+third_mesh_xy, -MSL_dy/2-third_mesh_xy))
+mesh.y = np.concatenate((mesh.y, np.array([0.0]), MSL_dy/2+third_mesh, -MSL_dy/2-third_mesh))
 mesh.y = SmoothMeshLines(mesh.y, resolution_u/4)
-mesh.y = np.concatenate((mesh.y, (MSL_dy/2+stub_dy)+third_mesh_xy))
+mesh.y = np.concatenate((mesh.y, (MSL_dy/2+stub_dy)+third_mesh))
 
 # Add edges in Y-edges to simulation 
 mesh.y = np.concatenate((mesh.y, np.array([-15*MSL_dy, 15*MSL_dy+stub_dy])))
 mesh.y = SmoothMeshLines(mesh.y, resolution_u)
 
 # Create 5 points from 0 to substrate_thickness
-# 447 is the size here (447 / 38) = 12
-# IF the thickness is 36 um, make sure the resolution is small enough (e.g.: 12 um)
-print(f"resolution_u: {resolution_u}")
-third_mesh_z = array([2*resolution_u/3, -resolution_u/3])/38
-mesh.z = np.concatenate((mesh.z, np.array([0.0]), substrate_thickness+MSL_dz+third_mesh_z, substrate_thickness-third_mesh_z))
-mesh.z = SmoothMeshLines(mesh.z, resolution_u/38)
-
-mesh.z = np.concatenate((mesh.z, linspace(0, substrate_thickness, 5), np.array([3000])))
+mesh.z = np.concatenate((mesh.z, linspace(0, substrate_thickness, 5)))
 
 # Z2 boundary condition is MUR, 3000 -> 3 mm
 mesh.z = np.concatenate((mesh.z, np.array([3000])))
@@ -175,16 +174,16 @@ ports = {}
 
 feed_R = 50
 
-# Increase wave port size
-port1_start = [-MSL_dx/2+MSL_dx/2/3, -MSL_dy/2, substrate_thickness]
-port1_stop  = [-MSL_dx/2+MSL_dx/2/3,  MSL_dy/2, 0]
-mesh.x = np.concatenate((mesh.x, np.array([port1_start[0]])))
+# Increase wave port size (define length as MSL_dx/10)
+port1_start = [-MSL_dx/2+MSL_dx/2/3			 , -MSL_dy/3, substrate_thickness]
+port1_stop  = [-MSL_dx/2+MSL_dx/2/3+MSL_dx/10,  MSL_dy/3, 0]
+mesh.x = np.concatenate((mesh.x, np.array([port1_start[0], port1_stop[0]])))
 mesh.x = SmoothMeshLines(mesh.x, resolution_u)
 
 
-port2_start = [MSL_dx/2-MSL_dx/2/3 , -MSL_dy/2, substrate_thickness]
-port2_stop  = [MSL_dx/2-MSL_dx/2/3 ,  MSL_dy/2, 0]
-mesh.x = np.concatenate((mesh.x, np.array([port2_start[0]])))
+port2_start = [MSL_dx/2-MSL_dx/2/3 , -MSL_dy/3, substrate_thickness]
+port2_stop  = [MSL_dx/2-MSL_dx/2/3 - MSL_dx/10,  MSL_dy/3, 0]
+mesh.x = np.concatenate((mesh.x, np.array([port2_start[0], port2_stop[0]],)))
 mesh.x = SmoothMeshLines(mesh.x, resolution_u)
 
 

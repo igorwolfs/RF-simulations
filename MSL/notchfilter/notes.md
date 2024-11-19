@@ -2,8 +2,19 @@
 ## Meshing
 ### Meshing ratio around PEC
 It is VERY IMPORTANT to always have a mesh line of:
-- 2*resolution / 3 outside of the conductor
-- resolution/3 inside the conductor
+- $2*resolution / 3$ outside of the conductor
+- $resolution/3$ inside the conductor
+
+## Probes
+### Current Probe
+Make sure the current probe always has
+- The right area covered
+- The right direction covered
+- The right weight
+
+Note that if you don't set any of these correctly, you'll get an erroneous value for your s-parameters.
+
+> e.g.: if the weight is negative, ingoing voltage will become outgoing voltage. So if the weight of your probe at your excitation is negative, it will perceive this voltage as reflected and your reflection coefficient will suddenly go up.
 
 ## 3D geometry
 ### Thickness
@@ -54,6 +65,7 @@ e.g.: let's say propagation is in the X-direction, fields will occur in Z and Y 
 3. The conductor must have infinite conductivity (so PEC)
 4. Lossless dielectric
 5. Cross-section of the tranmsision line must be constant.
+
 ### QUASI-TEM mode for MSL:
 An MSL does NOT support "True" TEM mode, since the electromagnetic field exists 
 - in dielectric below
@@ -62,7 +74,7 @@ So there will be a small longitudinal component in both electric and magnetic fi
 
 
 -> The higher the frequency, the higher the effect.
-However at lower frequencies 
+However at lower frequencies
 
 ### TEM mode in stripline
 In a stripline the conducting strip is placed between 2 ground planes and dielectric, which enclose the electric and magnetic fields.
@@ -121,13 +133,30 @@ $S12 = b2 / a1$
 https://cds.cern.ch/record/1415639/files/p67.pdf
 https://web.ece.ucsb.edu/~long/ece145a/Notes4_Sparams.pdf
 
-# Questions
-## What determines the S-parameter variation?
-### Context
-We see that there is a S11 (reflection) parameter peak and an S21 (energy passed from port 1 to port 2) parameter drop around 3.5 GHz for the "structured.py".
-- We set the load impedance to 50 ohms for port calculations
+## Notchfilter
 
-Note that whenever you see S-parameter shakiness or impedance shakiness which isn't to be expected, it's probably because of unwanted reflections, non-ideal absorption etc..
+### Filtering frequency
+The notch-filter will filter out frequencies with a wavelength of notch_length * 4.
+This is because the wave, travelling along the notch and back, will have experienced a 180 degrees phase shift compared to the wave which just arrived at the notch. These 2 waves will subsequently cancel each other out.
+
+The same will happen to all frequencies which have a wavelenght of 4 * notch_length / (2*n + 1), n a natural numbers.
+
+$Z_{in} = Z_{0} * \frac{(Z_{L} + j*Z_{0} * tan(\beta * l))}{(Z_{0} + j*Z_{L} * tan(\beta * l))} $
+
+With
+- L: the length of the transmission line
+- $\beta = 2 * \pi / \lambda$ 
+- $Z_{L}$: the load impedance terminating the line.
+
+In case of L being equal to $\lambda*(2*n+1)/4$
+- $tan((\pi/2) * (2*n+1)) = tan(\pi /2) = infinity$
+
+In case of a short-circuited stub the load impedance $Z_{L}$ is zero, so the total impedance becomes infinity, and the stub becomes an open circuit for those frequencies.
+
+### Source
+https://www.ittc.ku.edu/~jstiles/723/handouts/Transmission%20Line%20Input%20Impedance.pdf
+
+
 
 ## Why is the S-parameter calculated with a reference impedance of 50 ohms, but the ports have an impedance of 0 ohms? Why not another arbitrary number?
 ### Context
@@ -135,3 +164,9 @@ Wee see that in "structured.py", using the CalcPort function the reference imped
 - It is used to calculate the phase-shift of the voltage
 - It is used to calculate the incoming current and voltage from the total incoming current and voltage.
 These voltages are used further on to calculate the S-parameters.
+
+### Answer
+The impedance used to calculate the current, is supposed to be the impedance of the medium.
+When normalizing the voltage and currents with this impedance, it simplifies calculations of S-parameters by a lot.
+
+One can choose a random impedance Z0 to calculate I = V / Z0, in that case the relative value of the S-parameters will still be correct (relative to the other S-parameters), however the actual values will not correspond to the real values.

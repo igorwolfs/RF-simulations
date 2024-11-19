@@ -13,6 +13,7 @@ from openEMS import openEMS
 
 APPCSXCAD_CMD = '~/opt/openEMS/bin/AppCSXCAD'
 
+sim_enabled = False
 
 ### CONSTANTS
 from openEMS.physical_constants import *
@@ -23,12 +24,14 @@ currDir = os.getcwd()
 file_name = os.path.basename(__file__).strip('.py')
 Plot_Path = os.path.join(currDir, file_name)
 Sim_Path = os.path.join(Plot_Path, file_name)
-if not (os.path.exists(Plot_Path)):
-	os.mkdir(Plot_Path)
-	os.mkdir(Sim_Path)
-else:
-	shutil.rmtree(Sim_Path)
-	os.mkdir(Sim_Path)
+
+if sim_enabled:
+	if not (os.path.exists(Plot_Path)):
+		os.mkdir(Plot_Path)
+		os.mkdir(Sim_Path)
+	else:
+		shutil.rmtree(Sim_Path)
+		os.mkdir(Sim_Path)
 
 
 ## setup FDTD parameter & excitation function
@@ -60,7 +63,9 @@ mesh.z = np.array([])
 # EXCITATION Gaussian
 #######################################################################################################################################
 f_max = 7e9
-FDTD.SetGaussExcite( f_max/2, f_max/2 )
+f0 = f_max / 2
+fc = f_max / 2
+FDTD.SetGaussExcite(f0, fc)
 
 
 #######################################################################################################################################
@@ -71,14 +76,14 @@ materialList = {}
 
 ## MATERIAL - PEC
 materialList['PEC'] = CSX.AddMetal( 'PEC' )
-MSL_dx = 100000 # 5 cm
+MSL_dx = 50000*2 # 5 cm
 MSL_dy = 600 # 0.6 mm
 stub_dy = 12e3 # 12 mm
 
 
 ## MATERIAL - RO4350B
 substrate_epr = 3.66
-substrate_thickness = 254
+substrate_dz = 254
 materialList['RO4350B'] = CSX.AddMaterial( 'RO4350B', epsilon=substrate_epr)
 
 wavelength_min = (C0/f_max) *  (1/(sqrt(substrate_epr)))
@@ -87,18 +92,17 @@ wavelength_min_u = wavelength_min / unit
 #######################################################################################################################################
 # Geometry and Grid
 #######################################################################################################################################
+
 from CSXCAD.SmoothMeshLines import SmoothMeshLines
 ## PEC Stub Definition in (the XY-plane)
-start = [-MSL_dy/2,  MSL_dy/2, substrate_thickness]
-stop  = [ MSL_dy/2,  MSL_dy/2+stub_dy, substrate_thickness]
-materialList['PEC'].AddBox(start, stop, priority=10 )
-
+start = [MSL_dx/2-MSL_dy/2,  MSL_dy/2, substrate_dz]
+stop  = [MSL_dx/2+MSL_dy/2,  MSL_dy/2+stub_dy, substrate_dz]
+materialList['PEC'].AddBox(start, stop, priority=10)
 
 ## DIELECTRIC Definition
-subs_start = [-MSL_dx/2, -15*MSL_dy, 0]
-subs_stop  = [+MSL_dx/2, +15*MSL_dy+stub_dy, substrate_thickness]
-materialList['RO4350B'].AddBox(subs_start, subs_stop )
-
+subs_start = [0, -15*MSL_dy, 0]
+subs_stop  = [MSL_dx, +15*MSL_dy+stub_dy, substrate_dz]
+materialList['RO4350B'].AddBox(subs_start, subs_stop)
 
 ## Setup Geometry & Mesh
 resolution_u = wavelength_min_u / 50 # resolution of lambda/50
@@ -107,11 +111,11 @@ resolution_u = wavelength_min_u / 50 # resolution of lambda/50
 third_mesh = array([2*resolution_u/3, -resolution_u/3])/4
 # Add 2/3rds x resolution on the outside and 1/3rd x resolution on the inside of the MSL
 # We add 2/3rds x MSL_dy here since the stub in the y-direction requires fine-grained dy-edges
-mesh.x = np.concatenate((mesh.x, np.array([0.0]), MSL_dy/2+third_mesh, -MSL_dy/2-third_mesh))
+mesh.x = np.concatenate((mesh.x, np.array([MSL_dx/2]), MSL_dx/2+MSL_dy/2+third_mesh, MSL_dx/2-MSL_dy/2-third_mesh))
 mesh.x = SmoothMeshLines(mesh.x, resolution_u/4)
 
 # Add X-edges to the simulation
-mesh.x = np.concatenate((mesh.x, np.array([-MSL_dx/2, MSL_dx/2])))
+mesh.x = np.concatenate((mesh.x, np.array([0, MSL_dx])))
 # mesh.x = SmoothMeshLines(mesh.x, resolution_u)
 mesh.x = SmoothMeshLines(mesh.x, resolution_u)
 
@@ -125,8 +129,8 @@ mesh.y = np.concatenate((mesh.y, (MSL_dy/2+stub_dy)+third_mesh))
 mesh.y = np.concatenate((mesh.y, np.array([-15*MSL_dy, 15*MSL_dy+stub_dy])))
 mesh.y = SmoothMeshLines(mesh.y, resolution_u)
 
-# Create 5 points from 0 to substrate_thickness
-mesh.z = np.concatenate((mesh.z, linspace(0, substrate_thickness, 5)))
+# Create 5 points from 0 to substrate_dz
+mesh.z = np.concatenate((mesh.z, linspace(0, substrate_dz, 5)))
 
 # Z2 boundary condition is MUR, 3000 -> 3 mm
 mesh.z = np.concatenate((mesh.z, np.array([3000])))
@@ -155,12 +159,12 @@ FEED RESISTANCE: Assumed to be zero when no parameter is passed. If a parameter 
 ## MSL port setup
 ports = {}
 
-portstart = [ -MSL_dx/2, -MSL_dy/2, substrate_thickness]
-portstop  = [ 0,  MSL_dy/2, 0]
+portstart = [ 0, -MSL_dy/2, substrate_dz]
+portstop  = [ MSL_dx/2,  MSL_dy/2, 0]
 ports['portin'] = FDTD.AddMSLPort( 1,  materialList['PEC'], portstart, portstop, 'x', 'z', excite=-1, FeedShift=10*resolution_u, MeasPlaneShift=MSL_dx/2/3, priority=10)
 
-portstart = [MSL_dx/2, -MSL_dy/2, substrate_thickness]
-portstop  = [0         ,  MSL_dy/2, 0]
+portstart = [MSL_dx, -MSL_dy/2, substrate_dz]
+portstop  = [MSL_dx/2 ,  MSL_dy/2, 0]
 ports['portout']  = FDTD.AddMSLPort( 2, materialList['PEC'], portstart, portstop, 'x', 'z', MeasPlaneShift=MSL_dx/2/3, priority=10)
 
 
@@ -169,7 +173,7 @@ ports['portout']  = FDTD.AddMSLPort( 2, materialList['PEC'], portstart, portstop
 #######################################################################################################################################
 
 Et = CSX.AddDump('Et', file_type=0, sub_sampling=[2,2,2])
-Et.AddBox(np.array(subs_start)*2, np.array(subs_stop)*2)
+Et.AddBox(np.array(subs_start), np.array(subs_stop))
 
 
 #######################################################################################################################################
@@ -184,27 +188,30 @@ from CSXCAD import AppCSXCAD_BIN
 os.system(AppCSXCAD_BIN + ' "{}"'.format(CSX_file))
 
 # FDTD.Run(Sim_Path, cleanup=True)
-FDTD.Run(Sim_Path, cleanup=True, debug_material=True, debug_pec=True, debug_operator=True, debug_boxes=True, debug_csx=True, verbose=3)
+if sim_enabled:
+	FDTD.Run(Sim_Path, cleanup=True, debug_material=True, debug_pec=True, debug_operator=True, debug_boxes=True, debug_csx=True, verbose=3)
 
 
 #######################################################################################################################################
 # POST_PROCESSING
 #######################################################################################################################################
 ### Run the simulation
-	
-f = linspace( 1e6, f_max, 1601 )
+#? How can you take a frequency from 1 MHz to 7 GHz
+
+freq = linspace( f0-fc, f0+fc, 1601)
+# freq = linspace( 1e6, f_max, 1601 )
 Z_ref = 50
-ports['portin'].CalcPort( Sim_Path, f, ref_impedance = Z_ref) 
-ports['portout'].CalcPort( Sim_Path, f, ref_impedance = Z_ref) 
+ports['portin'].CalcPort( Sim_Path, freq, ref_impedance = Z_ref) 
+ports['portout'].CalcPort( Sim_Path, freq, ref_impedance = Z_ref) 
 
 
 ## S-Parameter Calculations
 s11 = ports['portin'].uf_ref / ports['portin'].uf_inc
 s21 = ports['portout'].uf_ref / ports['portin'].uf_inc
 
-plot(f/1e9,20*log10(abs(s11)),'k-',linewidth=2 , label='$S_{11}$')
+plot(freq/1e9,20*log10(abs(s11)),'k-',linewidth=2 , label='$S_{11}$')
 grid()
-plot(f/1e9,20*log10(abs(s21)),'r--',linewidth=2 , label='$S_{21}$')
+plot(freq/1e9,20*log10(abs(s21)),'r--',linewidth=2 , label='$S_{21}$')
 legend()
 ylabel('S-Parameter (dB)')
 xlabel('frequency (GHz)')
@@ -213,17 +220,41 @@ ylim([-40, 2])
 plt.savefig(os.path.join(Plot_Path, 's_parameters.pdf'))
 show()
 
-
+'''
 ## Z (Impedance) calculations for the port
 ZL = ports['portin'].uf_tot / ports['portin'].if_tot
 figure()
-plot(f*1e-6,real(ZL), linewidth=2, label='$\Re\{Z_L\}$')
+plot(freq*1e-6,real(ZL), linewidth=2, label='$\Re\{Z_L\}$')
 grid()
-plot(f*1e-6,imag(ZL),'r--', linewidth=2, label='$\Im\{Z_L\}$')
+plot(freq*1e-6,imag(ZL),'r--', linewidth=2, label='$\Im\{Z_L\}$')
 ylabel('ZL $(\Omega)$')
 xlabel(r'frequency (MHz) $\rightarrow$')
 legend()
-
+ylim([-200, 200])
 plt.savefig(os.path.join(Plot_Path, 'zl_parameters.pdf'))
-
 show()
+
+## UF_TOT DEBUGGING PLOTS
+figure()
+plot(freq*1e-6,ports['portin'].uf_tot, linewidth=2, label='$uf_tot_portin$')
+grid()
+plot(freq*1e-6,ports['portout'].uf_tot, linewidth=2, label='$uf_tot_portout$')
+ylabel('uf_tot')
+xlabel(r'frequency (MHz) $\rightarrow$')
+legend()
+
+plt.savefig(os.path.join(Plot_Path, 'uf_tot.pdf'))
+show()
+
+## IF_TOT DEBUGGING PLOTS
+figure()
+plot(freq*1e-6,ports['portin'].if_tot, linewidth=2, label='$if_tot_portin$')
+grid()
+plot(freq*1e-6,ports['portout'].if_tot, linewidth=2, label='$if_tot_portout$')
+ylabel('if_tot')
+xlabel(r'frequency (MHz) $\rightarrow$')
+legend()
+
+plt.savefig(os.path.join(Plot_Path, 'if_tot.pdf'))
+show()
+'''
