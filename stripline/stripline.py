@@ -198,38 +198,38 @@ port_weight = 0.5
 
 ## define voltage calc box
 dump_boxes['in_ut1_A'] = CSX.AddProbe(  'in_ut1_A', 0, weight=port_weight )
-in_ut1_A_start = [mesh.x[in_xidx], 0, substrate_dz/2]
-in_ut1_A_stop  = [mesh.x[in_xidx], 0, 0]
+in_ut1_A_start = [mesh.x[in_xidx], 0, 0]
+in_ut1_A_stop  = [mesh.x[in_xidx], 0, substrate_dz/2]
 dump_boxes['in_ut1_A'].AddBox(in_ut1_A_start, in_ut1_A_stop, priority=0)
 
 # add a second voltage probe to compensate space offset between voltage and current
 dump_boxes['in_ut1_B'] = CSX.AddProbe(  'in_ut1_B', 0, weight=port_weight )
-in_ut1_B_start = [mesh.x[in_xidx+1], 0, substrate_dz/2]
-in_ut1_B_stop  = [mesh.x[in_xidx+1], 0, 0]
+in_ut1_B_start = [mesh.x[in_xidx+1], 0, 0]
+in_ut1_B_stop  = [mesh.x[in_xidx+1], 0, substrate_dz/2]
 dump_boxes['in_ut1_B'].AddBox(in_ut1_B_start, in_ut1_B_stop, priority=0)
 
 # add a third voltage probe to compensate space offset between voltage and current
 dump_boxes['in_ut1_C'] = CSX.AddProbe(  'in_ut1_C', 0, weight=port_weight )
-in_ut1_C_start = [mesh.x[in_xidx+2], 0, substrate_dz/2]
-in_ut1_C_stop  = [mesh.x[in_xidx+2], 0, 0]
+in_ut1_C_start = [mesh.x[in_xidx+2], 0, 0]
+in_ut1_C_stop  = [mesh.x[in_xidx+2], 0, substrate_dz/2]
 dump_boxes['in_ut1_C'].AddBox(in_ut1_C_start, in_ut1_C_stop, priority=0)
 
 ## PORT LOWER
 dump_boxes['in_ut2_A'] = CSX.AddProbe(  'in_ut2_A', 0, weight=port_weight )
-in_ut2_A_start = [mesh.x[in_xidx], 0, -substrate_dz/2]
-in_ut2_A_stop  = [mesh.x[in_xidx], 0, 0]
+in_ut2_A_start = [mesh.x[in_xidx], 0, 0]
+in_ut2_A_stop  = [mesh.x[in_xidx], 0, -substrate_dz/2]
 dump_boxes['in_ut2_A'].AddBox(in_ut2_A_start, in_ut2_A_stop, priority=0)
 
 # add a second voltage probe to compensate space offset between voltage and current
 dump_boxes['in_ut2_B'] = CSX.AddProbe(  'in_ut2_B', 0, weight=port_weight )
-in_ut2_B_start = [mesh.x[in_xidx+1], 0, -substrate_dz/2]
-in_ut2_B_stop  = [mesh.x[in_xidx+1], 0, 0]
+in_ut2_B_start = [mesh.x[in_xidx+1], 0, 0]
+in_ut2_B_stop  = [mesh.x[in_xidx+1], 0, -substrate_dz/2]
 dump_boxes['in_ut2_B'].AddBox(in_ut2_B_start, in_ut2_B_stop, priority=0)
 
 # add a third voltage probe to compensate space offset between voltage and current
 dump_boxes['in_ut2_C'] = CSX.AddProbe(  'in_ut2_C', 0, weight=port_weight )
-in_ut2_C_start = [mesh.x[in_xidx+2], 0, -substrate_dz/2]
-in_ut2_C_stop  = [mesh.x[in_xidx+2], 0, 0]
+in_ut2_C_start = [mesh.x[in_xidx+2], 0, 0]
+in_ut2_C_stop  = [mesh.x[in_xidx+2], 0, -substrate_dz/2]
 dump_boxes['in_ut2_C'].AddBox(in_ut2_C_start, in_ut2_C_stop, priority=0)
 
 
@@ -254,39 +254,39 @@ out_zidx  = int(interpl_z(0)) # height
 
 ## PORT UPPER
 dump_boxes['out_ut1_A'] = CSX.AddProbe(  'out_ut1_A', 0, weight=port_weight )
-out_ut1_A_start = [mesh.x[out_xidx], 0, substrate_dz/2]
-out_ut1_A_stop  = [mesh.x[out_xidx], 0, 0]
+out_ut1_A_start = [mesh.x[out_xidx], 0, 0]
+out_ut1_A_stop  = [mesh.x[out_xidx], 0, substrate_dz/2]
 dump_boxes['out_ut1_A'].AddBox(out_ut1_A_start, out_ut1_A_stop, priority=0)
 
 # add a second voltage probe to compensate space offset between voltage and current
 dump_boxes['out_ut1_B'] = CSX.AddProbe(  'out_ut1_B', 0, weight=port_weight )
-out_ut1_B_start = [mesh.x[out_xidx+1], 0, substrate_dz/2]
-out_ut1_B_stop  = [mesh.x[out_xidx+1], 0, 0]
+out_ut1_B_start = [mesh.x[out_xidx+1], 0, 0]
+out_ut1_B_stop  = [mesh.x[out_xidx+1], 0, substrate_dz/2]
 dump_boxes['out_ut1_B'].AddBox(out_ut1_B_start, out_ut1_B_stop, priority=0)
 
 # add a third voltage probe to compensate space offset between voltage and current
 dump_boxes['out_ut1_C'] = CSX.AddProbe(  'out_ut1_C', 0, weight=port_weight )
-out_ut1_C_start = [mesh.x[out_xidx+2], 0, substrate_dz/2]
-out_ut1_C_stop  = [mesh.x[out_xidx+2], 0, 0]
+out_ut1_C_start = [mesh.x[out_xidx+2], 0, 0]
+out_ut1_C_stop  = [mesh.x[out_xidx+2], 0, substrate_dz/2]
 dump_boxes['out_ut1_C'].AddBox(out_ut1_C_start, out_ut1_C_stop, priority=0)
 
 
 ## PORT LOWER
 dump_boxes['out_ut2_A'] = CSX.AddProbe(  'out_ut2_A', 0, weight=port_weight )
-out_ut2_A_start = [mesh.x[out_xidx], 0, -substrate_dz/2]
-out_ut2_A_stop  = [mesh.x[out_xidx], 0, 0]
+out_ut2_A_start = [mesh.x[out_xidx], 0, 0]
+out_ut2_A_stop  = [mesh.x[out_xidx], 0, -substrate_dz/2]
 dump_boxes['out_ut2_A'].AddBox(out_ut2_A_start, out_ut2_A_stop, priority=0)
 
 # add a second voltage probe to compensate space offset between voltage and current
 dump_boxes['out_ut2_B'] = CSX.AddProbe(  'out_ut2_B', 0, weight=port_weight )
-out_ut2_B_start = [mesh.x[out_xidx+1], 0, -substrate_dz/2]
-out_ut2_B_stop  = [mesh.x[out_xidx+1], 0, 0]
+out_ut2_B_start = [mesh.x[out_xidx+1], 0, 0]
+out_ut2_B_stop  = [mesh.x[out_xidx+1], 0, -substrate_dz/2]
 dump_boxes['out_ut2_B'].AddBox(out_ut2_B_start, out_ut2_B_stop, priority=0)
 
 # add a third voltage probe to compensate space offset between voltage and current
 dump_boxes['out_ut2_C'] = CSX.AddProbe(  'out_ut2_C', 0, weight=port_weight )
-out_ut2_C_start = [mesh.x[out_xidx+2], 0, -substrate_dz/2]
-out_ut2_C_stop  = [mesh.x[out_xidx+2], 0, 0]
+out_ut2_C_start = [mesh.x[out_xidx+2], 0, 0]
+out_ut2_C_stop  = [mesh.x[out_xidx+2], 0, -substrate_dz/2]
 dump_boxes['out_ut2_C'].AddBox(out_ut2_C_start, out_ut2_C_stop, priority=0)
 
 ## define current calc box
@@ -360,7 +360,7 @@ for i in range(3):
 	in_u_f.append(U1_in.ui_f_val[i] + U2_in.ui_f_val[i])
 	in_u_t.append(U1_in.ui_val[i] + U2_in.ui_val[i])
 	out_u_f.append(U1_out.ui_f_val[i] + U2_out.ui_f_val[i])
-	out_u_t.append(U1_in.ui_val[i] + U2_in.ui_val[i])
+	out_u_t.append(U1_out.ui_val[i] + U2_out.ui_val[i])
 
 ## Characteristic impedance calculation
 uf_in_tot = in_u_f[1]
@@ -373,6 +373,7 @@ if_out_tot = (out_i_f[0] + out_i_f[1]) / 2
 # eps: 3.66
 Z_ref = 50.0
 
+
 ## Excitation applied at port 1 only:
 a1 = 1/(2*sqrt(Z_ref)) * (uf_in_tot + Z_ref * if_in_tot)
 b1 = 1/(2*sqrt(Z_ref)) * (uf_in_tot - Z_ref * if_in_tot)
@@ -381,6 +382,31 @@ b2 = 1/(2*sqrt(Z_ref)) * (uf_out_tot - Z_ref * if_out_tot)
 
 s11 = (b1 / a1)
 s21 = (b2 / a1)
+
+'''
+
+uf_in_inc = 0.5 * ( uf_in_tot + if_in_tot * Z_ref )
+if_in_inc = 0.5 * ( if_in_tot + uf_in_tot / Z_ref )
+
+uf_in_ref = uf_in_tot - uf_in_inc
+if_in_ref = if_in_inc - if_in_tot
+
+# OUT
+uf_out_inc = 0.5 * ( uf_out_tot + if_out_tot * Z_ref )
+if_out_inc = 0.5 * ( if_out_tot + uf_out_tot / Z_ref )
+
+uf_out_ref = uf_out_tot - uf_out_inc
+if_out_ref = if_out_inc - if_out_tot
+
+# S-parameters
+s11 = uf_in_ref / uf_in_inc
+s21 = uf_out_ref / uf_in_inc
+
+b1 = uf_in_ref
+b2 = uf_out_ref
+a1 = uf_in_inc
+a2 = np.zeros_like(a1)
+'''
 
 ## Expected peaks
 fig, ax1 = plt.subplots()
@@ -415,11 +441,10 @@ plt.show()
 # a1, a2
 fig, ax1 = plt.subplots()
 ax2 = ax1.twinx()
-ax3 = ax1.twinx()
 ax1.plot(freq*1e-9, a1, 'g-', linewidth=2, label='$uf_ref_1$')
 ax2.plot(freq*1e-9, a2, 'b-', linewidth=2, label='$uf_ref_2$')
 
-ax1.set_xlabel('time (t / ns)')
+ax1.set_xlabel('frequency (Hz)')
 ax1.set_ylabel('Volts uf ref 1 (V)', color='g')
 ax2.set_ylabel('Volts uf ref 2 (V)', color='b')
 
@@ -431,17 +456,69 @@ plt.show()
 # b1, b2
 fig, ax1 = plt.subplots()
 ax2 = ax1.twinx()
-ax3 = ax1.twinx()
 ax1.plot(freq*1e-9, b1, 'g-', linewidth=2, label='$uf_inc_1$')
 ax2.plot(freq*1e-9, b2, 'b-', linewidth=2, label='$uf_inc_2$')
 
-ax1.set_xlabel('time (t / ns)')
+ax1.set_xlabel('frequency (Hz)')
 ax1.set_ylabel('Volts uf inc 1 (V)', color='g')
 ax2.set_ylabel('Volts uf inc 2 (V)', color='b')
 
 plt.savefig(os.path.join(Plot_Path, 'voltages_inc.pdf'))
 plt.show()
 
+# uf_in_tot
+fig, ax1 = plt.subplots()
+ax2 = ax1.twinx()
+ax1.plot(freq*1e-9, uf_in_tot, 'g-', linewidth=2, label='$uf_in_tot$')
+ax2.plot(freq*1e-9, uf_out_tot, 'b-', linewidth=2, label='$uf_out_tot$')
+
+ax1.set_xlabel('frequency (Hz)')
+ax1.set_ylabel('uf_in_tot (V)', color='g')
+ax2.set_ylabel('uf_out_tot (V)', color='b')
+
+plt.savefig(os.path.join(Plot_Path, 'uf_tot.pdf'))
+plt.show()
+
+
+# if_in_tot
+fig, ax1 = plt.subplots()
+ax2 = ax1.twinx()
+ax1.plot(freq*1e-9, if_in_tot, 'g-', linewidth=2, label='$if_in_tot$')
+ax2.plot(freq*1e-9, if_out_tot, 'b-', linewidth=2, label='$if_out_tot$')
+
+ax1.set_xlabel('frequency (GHz)')
+ax1.set_ylabel('if_in_tot (A)', color='g')
+ax2.set_ylabel('if_out_tot (A)', color='b')
+
+plt.savefig(os.path.join(Plot_Path, 'if_tot.pdf'))
+plt.show()
+
+# uf_in_tot
+fig, ax1 = plt.subplots()
+ax2 = ax1.twinx()
+
+ax1.plot(freq*1e-9, in_u_f[1], 'g-', linewidth=2, label='$in_u_f$')
+ax2.plot(freq*1e-9, out_u_f[1], 'b-', linewidth=2, label='$out_u_f$')
+
+ax1.set_xlabel('frequency (GHz)')
+ax1.set_ylabel('in_u_f (V)', color='g')
+ax2.set_ylabel('out_u_f (V)', color='b')
+
+plt.savefig(os.path.join(Plot_Path, 'uf_raw.pdf'))
+plt.show()
+
+# f_in_tot
+fig, ax1 = plt.subplots()
+ax2 = ax1.twinx()
+ax1.plot(freq*1e-9, in_i_f[1], 'g-', linewidth=2, label='$in_i_f$')
+ax2.plot(freq*1e-9, out_i_f[1], 'b-', linewidth=2, label='$out_i_f$')
+
+ax1.set_xlabel('frequency (GHz)')
+ax1.set_ylabel('in_i_f (V)', color='g')
+ax2.set_ylabel('out_i_f (V)', color='b')
+
+plt.savefig(os.path.join(Plot_Path, 'if_raw.pdf'))
+plt.show()
 
 '''
 
