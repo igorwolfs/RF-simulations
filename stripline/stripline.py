@@ -412,19 +412,34 @@ plt.show()
 
 
 ## Plotting
-# * figure()
+# a1, a2
 fig, ax1 = plt.subplots()
 ax2 = ax1.twinx()
 ax3 = ax1.twinx()
-ax1.plot(U1_in.ui_time[0], in_u_t[0], 'g-', linewidth=2, label='$in_ut$')
-ax2.plot(U1_out.ui_time[0], out_u_t[0], 'b-', linewidth=2, label='$out_ut$')
-ax3.plot(E_field.ui_time[0], E_field.ui_val[0], 'y-', linewidth=2)
+ax1.plot(freq*1e-9, a1, 'g-', linewidth=2, label='$uf_ref_1$')
+ax2.plot(freq*1e-9, a2, 'b-', linewidth=2, label='$uf_ref_2$')
 
 ax1.set_xlabel('time (t / ns)')
-ax1.set_ylabel('Volts (V)', color='g')
-ax2.set_ylabel('Volts (V)', color='b')
+ax1.set_ylabel('Volts uf ref 1 (V)', color='g')
+ax2.set_ylabel('Volts uf ref 2 (V)', color='b')
 
-plt.savefig(os.path.join(Plot_Path, 'voltages.pdf'))
+plt.savefig(os.path.join(Plot_Path, 'voltages_ref.pdf'))
+plt.show()
+
+## Frequency plot a1, a2, b1, b2
+
+# b1, b2
+fig, ax1 = plt.subplots()
+ax2 = ax1.twinx()
+ax3 = ax1.twinx()
+ax1.plot(freq*1e-9, b1, 'g-', linewidth=2, label='$uf_inc_1$')
+ax2.plot(freq*1e-9, b2, 'b-', linewidth=2, label='$uf_inc_2$')
+
+ax1.set_xlabel('time (t / ns)')
+ax1.set_ylabel('Volts uf inc 1 (V)', color='g')
+ax2.set_ylabel('Volts uf inc 2 (V)', color='b')
+
+plt.savefig(os.path.join(Plot_Path, 'voltages_inc.pdf'))
 plt.show()
 
 
