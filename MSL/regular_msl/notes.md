@@ -90,6 +90,8 @@ Make sure to shift the excitation far enough away from the measurement probes to
 - The excitation signal has enough time to settle into its steady state. There might be spurious modes or non-uniform fields appearing due to the excitation which we don't want to measure.
 - There might be reflections interacting with the excitation, which might leads to weird voltage signals.
 
+### Current probe orientation
+Make sure the current probe always has the right weight / orientation (so a weight of +1 for an input port, and a weight of -1 for an output port).
 
 ## End conditions
 When no end conditions are passed, the signal increases to infinity.
@@ -100,6 +102,10 @@ One of the reasons this happens might be because there are not enough energy-dis
 ### How to choose the end condition
 Check when the simulation's MSL-energy level becomes pretty uniform, and make sure to stop the simulation at that point. Another option is to run the simulation once to check when the energy drops to its lowest point and then run it again until that point.
 
+## S-Parameter calculation
+For S-parameter calculation examples, chack the msl_s_param.py file. Important is that most of the field is contained in the quasi TEM-mode between the copper strip and the copper plate, so that's where the probes should be placed.
+
+It's tough to measure the field above since it gets distorted and is also not the mode through which you transport the energy.
 
 # TODO
 ## Boundary conditions

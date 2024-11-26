@@ -17,7 +17,7 @@ from openEMS import openEMS
 
 APPCSXCAD_CMD = '~/opt/openEMS/bin/AppCSXCAD'
 
-sim_enabled = False
+sim_enabled = True
 
 ### CONSTANTS
 from openEMS.physical_constants import *
@@ -341,8 +341,6 @@ a1 = 1/(2*sqrt(Z_ref)) * (u_in_val_f + Z_ref * I_in.ui_f_val[0])
 b1 = 1/(2*sqrt(Z_ref)) * (u_in_val_f - Z_ref * I_in.ui_f_val[0])
 a2 = 1/(2*sqrt(Z_ref)) * (u_out_val_f + Z_ref * I_out.ui_f_val[0])
 b2 = 1/(2*sqrt(Z_ref)) * (u_out_val_f - Z_ref * I_out.ui_f_val[0])
-
-
 
 print(f"A1: {abs(a1)}")
 print(f"A2: {abs(a2)}")
