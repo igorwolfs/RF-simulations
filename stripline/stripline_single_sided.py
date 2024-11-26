@@ -125,13 +125,13 @@ excitation = CSX.AddExcitation('excite', exc_type=0, exc_val=[0, 0, -1])
 excitation.AddBox(exc_start, exc_stop, priority=exc_priority)
 
 ## LOWER EXCITATION
-print(f"WARNING, THE Excitation here might not be on a grid")
-port_dx = 10*resolution_u
-exc_start = [port_dx, -SL_dy/2 , -substrate_dz/2]
-exc_stop  = [port_dx,  SL_dy/2 , 0]
-exc_priority = 10
-excitation = CSX.AddExcitation('excite', exc_type=0, exc_val=[0, 0, 1])
-excitation.AddBox(exc_start, exc_stop, priority=exc_priority)
+# print(f"WARNING, THE Excitation here might not be on a grid")
+# port_dx = 10*resolution_u
+# exc_start = [port_dx, -SL_dy/2 , -substrate_dz/2]
+# exc_stop  = [port_dx,  SL_dy/2 , 0]
+# exc_priority = 10
+# excitation = CSX.AddExcitation('excite', exc_type=0, exc_val=[0, 0, 1])
+# excitation.AddBox(exc_start, exc_stop, priority=exc_priority)
 
 
 ## * Do manual meshing X-DIR
@@ -194,7 +194,7 @@ in_yidx2 = int(interpl_y(SL_dy/2)) 	# width / 2
 in_zidx = int(interpl_z(0)) 	# height
 
 ## PORT UPPER
-port_weight = 0.5
+port_weight = 1
 
 ## define voltage calc box
 dump_boxes['in_ut1_A'] = CSX.AddProbe(  'in_ut1_A', 0, weight=port_weight )
@@ -214,6 +214,7 @@ in_ut1_C_start = [mesh.x[in_xidx+2], 0, 0]
 in_ut1_C_stop  = [mesh.x[in_xidx+2], 0, substrate_dz/2]
 dump_boxes['in_ut1_C'].AddBox(in_ut1_C_start, in_ut1_C_stop, priority=0)
 
+'''
 ## PORT LOWER
 dump_boxes['in_ut2_A'] = CSX.AddProbe(  'in_ut2_A', 0, weight=port_weight )
 in_ut2_A_start = [mesh.x[in_xidx], 0, 0]
@@ -231,18 +232,18 @@ dump_boxes['in_ut2_C'] = CSX.AddProbe(  'in_ut2_C', 0, weight=port_weight )
 in_ut2_C_start = [mesh.x[in_xidx+2], 0, 0]
 in_ut2_C_stop  = [mesh.x[in_xidx+2], 0, -substrate_dz/2]
 dump_boxes['in_ut2_C'].AddBox(in_ut2_C_start, in_ut2_C_stop, priority=0)
-
+'''
 
 ## define current calc box
 # current calc boxes will automatically snap to the next dual mesh-line
 dump_boxes['in_it_A'] = CSX.AddProbe( 'in_it_A', p_type=1, weight=1, norm_dir= 0)
-in_start_it_A = [mesh.x[in_xidx]+xdelta[in_xidx]/2, mesh.y[in_yidx1]-ydelta[in_yidx1-1]/2, mesh.z[in_zidx-1]]
-in_stop_it_A  = [mesh.x[in_xidx]+xdelta[in_xidx]/2, mesh.y[in_yidx2]+ydelta[in_yidx2]/2  , mesh.z[in_zidx+1]]
+in_start_it_A = [mesh.x[in_xidx]+xdelta[in_xidx]/2, mesh.y[in_yidx1]-ydelta[in_yidx1-1]/2, mesh.z[in_zidx]]#-1]]
+in_stop_it_A  = [mesh.x[in_xidx]+xdelta[in_xidx]/2, mesh.y[in_yidx2]+ydelta[in_yidx2]/2  , mesh.z[in_zidx]]#+1]]
 dump_boxes['in_it_A'].AddBox(in_start_it_A, in_stop_it_A, priority=0)
 
 dump_boxes['in_it_B'] = CSX.AddProbe( 'in_it_B', p_type=1, weight=1, norm_dir= 0)
-in_start_it_B = [mesh.x[in_xidx+1]+xdelta[in_xidx+1]/2, mesh.y[in_yidx1]-ydelta[in_yidx1-1]/2, mesh.z[in_zidx-1]]
-in_stop_it_B  = [mesh.x[in_xidx+1]+xdelta[in_xidx+1]/2, mesh.y[in_yidx2]+ydelta[in_yidx2]/2  , mesh.z[in_zidx+1]]
+in_start_it_B = [mesh.x[in_xidx+1]+xdelta[in_xidx+1]/2, mesh.y[in_yidx1]-ydelta[in_yidx1-1]/2, mesh.z[in_zidx]]#-1]]
+in_stop_it_B  = [mesh.x[in_xidx+1]+xdelta[in_xidx+1]/2, mesh.y[in_yidx2]+ydelta[in_yidx2]/2  , mesh.z[in_zidx]]#+1]]
 dump_boxes['in_it_B'].AddBox(in_start_it_B, in_stop_it_B, priority=0)
 
 
@@ -272,6 +273,7 @@ dump_boxes['out_ut1_C'].AddBox(out_ut1_C_start, out_ut1_C_stop, priority=0)
 
 
 ## PORT LOWER
+'''
 dump_boxes['out_ut2_A'] = CSX.AddProbe(  'out_ut2_A', 0, weight=port_weight )
 out_ut2_A_start = [mesh.x[out_xidx], 0, 0]
 out_ut2_A_stop  = [mesh.x[out_xidx], 0, -substrate_dz/2]
@@ -288,7 +290,7 @@ dump_boxes['out_ut2_C'] = CSX.AddProbe(  'out_ut2_C', 0, weight=port_weight )
 out_ut2_C_start = [mesh.x[out_xidx+2], 0, 0]
 out_ut2_C_stop  = [mesh.x[out_xidx+2], 0, -substrate_dz/2]
 dump_boxes['out_ut2_C'].AddBox(out_ut2_C_start, out_ut2_C_stop, priority=0)
-
+'''
 ## define current calc box
 # current calc boxes will automatically snap to the next dual mesh-line (propagation direction)
 '''
@@ -298,14 +300,14 @@ dump_boxes['out_ut2_C'].AddBox(out_ut2_C_start, out_ut2_C_stop, priority=0)
 @param NormDir: necessary for current probing box when dimension != 2 (measurement direction: x, y, z)
 '''
 dump_boxes['out_it_A'] = CSX.AddProbe( 'out_it_A', p_type=1, weight=-1, norm_dir= 0)
-out_start_it_A = [mesh.x[out_xidx]+xdelta[out_xidx]/2, mesh.y[out_yidx1]-ydelta[out_yidx1-1]/2, mesh.z[out_zidx-1]]
-out_stop_it_A =  [mesh.x[out_xidx]+xdelta[out_xidx]/2,  mesh.y[out_yidx2]+ydelta[out_yidx2]/2,  mesh.z[out_zidx+1]]
+out_start_it_A = [mesh.x[out_xidx]+xdelta[out_xidx]/2, mesh.y[out_yidx1]-ydelta[out_yidx1-1]/2, mesh.z[out_zidx]]#mesh.z[out_zidx-1]]
+out_stop_it_A =  [mesh.x[out_xidx]+xdelta[out_xidx]/2,  mesh.y[out_yidx2]+ydelta[out_yidx2]/2,  mesh.z[out_zidx]]#+1]]
 dump_boxes['out_it_A'].AddBox(out_start_it_A, out_stop_it_A, priority=0)
 
 
 dump_boxes['out_it_B'] = CSX.AddProbe( 'out_it_B', p_type=1, weight=-1, norm_dir= 0)
-out_start_it_B = [mesh.x[out_xidx+1]+xdelta[out_xidx+1]/2, mesh.y[out_yidx1]-ydelta[out_yidx1-1]/2, mesh.z[out_zidx-1]]
-out_stop_it_B =  [mesh.x[out_xidx+1]+xdelta[out_xidx+1]/2,  mesh.y[out_yidx2]+ydelta[out_yidx2]/2,  mesh.z[out_zidx+1]]
+out_start_it_B = [mesh.x[out_xidx+1]+xdelta[out_xidx+1]/2, mesh.y[out_yidx1]-ydelta[out_yidx1-1]/2, mesh.z[out_zidx]]#mesh.z[out_zidx-1]]
+out_stop_it_B =  [mesh.x[out_xidx+1]+xdelta[out_xidx+1]/2,  mesh.y[out_yidx2]+ydelta[out_yidx2]/2,  mesh.z[out_zidx]]#+1]]
 dump_boxes['out_it_B'].AddBox(out_start_it_B, out_stop_it_B, priority=0)
 
 
@@ -339,10 +341,10 @@ freq = linspace( f0-fc, f0+fc, 1601)
 
 E_field = UI_data(['et'], Sim_Path, freq)
 U1_in = UI_data(['in_ut1_A', 'in_ut1_B', 'in_ut1_C'], Sim_Path, freq) # Time domain/freq domain voltage
-U2_in = UI_data(['in_ut2_A', 'in_ut2_B', 'in_ut2_C'], Sim_Path, freq) # Time domain/freq domain voltage
+# U2_in = UI_data(['in_ut2_A', 'in_ut2_B', 'in_ut2_C'], Sim_Path, freq) # Time domain/freq domain voltage
 
 U1_out = UI_data(['out_ut1_A', 'out_ut1_B', 'out_ut1_C'], Sim_Path, freq) # Time domain/freq domain voltage
-U2_out = UI_data(['out_ut2_A', 'out_ut2_B', 'out_ut2_C'], Sim_Path, freq) # Time domain/freq domain voltage
+# U2_out = UI_data(['out_ut2_A', 'out_ut2_B', 'out_ut2_C'], Sim_Path, freq) # Time domain/freq domain voltage
 I_in = UI_data(['in_it_A', 'in_it_B'], Sim_Path, freq) # time domain / freq domain current (half time step offset is corrected? in octave?)
 I_out = UI_data(['out_it_A', 'out_it_B'], Sim_Path, freq) # time domain / freq domain current (half time step offset is corrected? in octave?)
 
@@ -357,10 +359,10 @@ for i in range(3):
 	if (i < 2):
 		in_i_f.append(I_in.ui_f_val[i])
 		out_i_f.append(I_out.ui_f_val[i])
-	in_u_f.append(U1_in.ui_f_val[i] + U2_in.ui_f_val[i])
-	in_u_t.append(U1_in.ui_val[i] + U2_in.ui_val[i])
-	out_u_f.append(U1_out.ui_f_val[i] + U2_out.ui_f_val[i])
-	out_u_t.append(U1_out.ui_val[i] + U2_out.ui_val[i])
+	in_u_f.append(U1_in.ui_f_val[i])# + U2_in.ui_f_val[i])
+	in_u_t.append(U1_in.ui_val[i])# + U2_in.ui_val[i])
+	out_u_f.append(U1_out.ui_f_val[i])# + U2_out.ui_f_val[i])
+	out_u_t.append(U1_out.ui_val[i])# + U2_out.ui_val[i])
 
 ## Characteristic impedance calculation
 uf_in_tot = in_u_f[1]
@@ -382,31 +384,6 @@ b2 = 1/(2*sqrt(Z_ref)) * (uf_out_tot - Z_ref * if_out_tot)
 
 s11 = (b1 / a1)
 s21 = (b2 / a1)
-
-'''
-
-uf_in_inc = 0.5 * ( uf_in_tot + if_in_tot * Z_ref )
-if_in_inc = 0.5 * ( if_in_tot + uf_in_tot / Z_ref )
-
-uf_in_ref = uf_in_tot - uf_in_inc
-if_in_ref = if_in_inc - if_in_tot
-
-# OUT
-uf_out_inc = 0.5 * ( uf_out_tot + if_out_tot * Z_ref )
-if_out_inc = 0.5 * ( if_out_tot + uf_out_tot / Z_ref )
-
-uf_out_ref = uf_out_tot - uf_out_inc
-if_out_ref = if_out_inc - if_out_tot
-
-# S-parameters
-s11 = uf_in_ref / uf_in_inc
-s21 = uf_out_ref / uf_in_inc
-
-b1 = uf_in_ref
-b2 = uf_out_ref
-a1 = uf_in_inc
-a2 = np.zeros_like(a1)
-'''
 
 ## Expected peaks
 fig, ax1 = plt.subplots()
