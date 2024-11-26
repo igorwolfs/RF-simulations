@@ -54,10 +54,14 @@ portstop  = [0          ,  SL_width/2, 0];
 [CSX,port{2}] = AddStripLinePort( CSX, 999, 2, 'PEC', portstart, portstop, SL_height, 'x', [0 0 -1], 'MeasPlaneShift',  SL_length/3 );
 
 %% write/show/run the openEMS compatible xml-file
-Sim_Path = ['tmp_' mfilename];
+plot_path = strcat(mfilename);
+Sim_Path = strcat(plot_path, "/", mfilename);
 Sim_CSX = 'stripline.xml';
 
 [status, message, messageid] = rmdir( Sim_Path, 's' ); % clear previous directory
+[status, message, messageid] = rmdir( plot_path, 's' ); % clear previous directory
+
+[status, message, messageid] = mkdir( plot_path ); % create empty simulation folder
 [status, message, messageid] = mkdir( Sim_Path ); % create empty simulation folder
 
 WriteOpenEMS( [Sim_Path '/' Sim_CSX], FDTD, CSX );
@@ -73,6 +77,7 @@ port = calcPort( port, Sim_Path, f, 'RefImpedance', 50);
 s11 = port{1}.uf.ref./ port{1}.uf.inc;
 s21 = port{2}.uf.ref./ port{1}.uf.inc;
 
+hf = figure 
 plot(f/1e9,20*log10(abs(s11)),'k-','LineWidth',2);
 hold on;
 grid on;
@@ -81,31 +86,120 @@ legend('S_{11}','S_{21}');
 ylabel('S-Parameter (dB)','FontSize',12);
 xlabel('frequency (GHz) \rightarrow','FontSize',12);
 ylim([-50 2]);
-print -djpg s_parameters  % Will produce "figure1.jpg" file
+
+save_path = strcat(plot_path, '/', 's_parameters', '.pdf');
+print (hf, save_path, "-dpdf");
 
 %% uf_inc
-close all
+close all;
 
-figure
+hf = figure
+
 [hAx,hLine1,hLine2] = plotyy(f/1e9, port{1}.uf.ref, f/1e9, port{2}.uf.ref);
-ylabel(hAx(1),"port1_uf_ref") % left y-axis 
-ylabel(hAx(2),"port2_uf_ref") % right y-axis
-% hLine1.LineStyle = "--";
-% hLine2.LineStyle = ":";
+
+ylabel(hAx(1),"port1_uf_ref"); % left y-axis 
+ylabel(hAx(2),"port2_uf_ref"); % right y-axis
 legend('uf_ref_1','uf_ref_2');
 xlabel('frequency (GHz) \rightarrow','FontSize',12);
-print -djpg voltage_ref
+save_path = strcat(plot_path, '/', 'voltage_ref', '.pdf');
+print (hf, save_path, "-dpdf");
 
-%% uf_ref
+%% uf_inc
+close all;
+
+hf = figure
+
+[hAx,hLine1,hLine2] = plotyy(f/1e9, port{1}.uf.inc, f/1e9, port{2}.uf.inc);
+
+ylabel(hAx(1),"port1_uf_inc"); % left y-axis 
+ylabel(hAx(2),"port2_uf_inc"); % right y-axis
+legend('port1_uf_inc','port2_uf_inc');
+xlabel('frequency (GHz) \rightarrow','FontSize',12);
+save_path = strcat(plot_path, '/', 'voltage_inc', '.pdf');
+print (hf, save_path, "-dpdf");
+
+
+%% uf_tot
 close all
 
+hf = figure
+plot(f/1e9, port{1}.uf.tot,'k-','LineWidth',2);
+hold on;
+grid on;
+plot(f/1e9, port{2}.uf.tot,'r--','LineWidth',2);
+
+title("port uf tot")
+legend('uf_in_tot','uf_out_tot');
+xlabel('frequency (GHz) \rightarrow','FontSize',12);
+save_path = strcat(plot_path, '/', 'uf_tot', '.pdf');
+print (hf, save_path, "-dpdf");
+
+%% uf_tot
+close all
+
+hf = figure
+title("port if tot")
+plot(f/1e9, port{1}.if.tot,'k-','LineWidth',2);
+hold on;
+grid on;
+plot(f/1e9, port{2}.if.tot,'r--','LineWidth',2);
+legend('if_in_tot','if_out_tot');
+xlabel('frequency (GHz) \rightarrow','FontSize',12);
+save_path = strcat(plot_path, '/', 'if_tot', '.pdf');
+print (hf, save_path, "-dpdf");
+
+%% RAW U 
+
+close all
+hf = figure
+
+plot(f/1e9, port{1}.raw.U.FD{2}.val,'k-','LineWidth',2);
+hold on;
+grid on;
+plot(f/1e9,  port{2}.raw.U.FD{2}.val,'r--','LineWidth',2);
+legend('uf_raw_in','uf_raw_out');
+xlabel('frequency (GHz) \rightarrow','FontSize',12);
+save_path = strcat(plot_path, "/", 'uf_raw', '.pdf');
+print (hf, save_path, "-dpdf");
+
+%% RAW I
+
+close all
+hf = figure
+
+plot(f/1e9, port{1}.raw.I.FD{1}.val,'k-','LineWidth',2);
+hold on;
+grid on;
+plot(f/1e9,  port{2}.raw.I.FD{1}.val,'r--','LineWidth',2);
+legend('if_raw_in','if_raw_out');
+ylabel('S-Parameter (dB)','FontSize',12);
+xlabel('frequency (GHz) \rightarrow','FontSize',12);
+save_path = strcat(plot_path, '/', 'if_raw', ".pdf");
+print (hf, save_path, "-dpdf");
+
+
+%{
+close all
 figure
-[hAx,hLine1,hLine2] = plotyy(f/1e9, port{1}.uf.inc, f/1e9, port{2}.uf.inc);
-title("port uf inc")
-ylabel(hAx(1),"port1_uf_inc") % left y-axis 
-ylabel(hAx(2),"port2_uf_inc") % right y-axis
+[hAx,hLine1,hLine2] = plotyy(f/1e9, port{1}.raw.U.FD{2}.val, f/1e9, port{2}.raw.U.FD{2}.val);
+title("port uf raw")
+ylabel(hAx(1),"uf_raw_in") % left y-axis 
+ylabel(hAx(2),"uf_raw_out") % right y-axis
 % hLine1.LineStyle = "--";
 % hLine2.LineStyle = ":";
-legend('uf_inc_1','uf_inc_2');
+legend('uf_raw_in','uf_raw_out');
 xlabel('frequency (GHz) \rightarrow','FontSize',12);
-print -djpg voltage_incoming
+print -djpg uf_raw
+
+
+close all
+figure
+title("port if raw")
+ylabel(hAx(1),"if_raw_in") % left y-axis 
+ylabel(hAx(2),"if_raw_out") % right y-axis
+% hLine1.LineStyle = "--";
+% hLine2.LineStyle = ":";
+legend('if_raw_in','if_raw_out');
+xlabel('frequency (GHz) \rightarrow','FontSize',12);
+print -djpg if_raw
+%}
