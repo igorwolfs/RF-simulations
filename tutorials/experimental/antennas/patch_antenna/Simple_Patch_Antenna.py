@@ -107,7 +107,18 @@ start = [feed_pos, 0, 0]
 stop  = [feed_pos, 0, substrate_thickness]
 port = FDTD.AddLumpedPort(1, feed_R, start, stop, 'z', 1.0, priority=5, edges2grid='xy')
 
+print(f"resolution_U: {mesh_res}")
+
+print(f"mesh.x: {mesh.GetLines(0)}")
+print(f"mesh.y: {mesh.GetLines(1)}")
+print(f"mesh.z: {mesh.GetLines(2)}")
+
 mesh.SmoothMeshLines('all', mesh_res, 1.4)
+
+print(f"mesh.x: {mesh.GetLines(0)}")
+print(f"mesh.y: {mesh.GetLines(1)}")
+print(f"mesh.z: {mesh.GetLines(2)}")
+
 
 # Add the nf2ff recording box
 nf2ff = FDTD.CreateNF2FFBox()
@@ -155,6 +166,8 @@ else:
     xlabel('Theta (deg)')
     title('Frequency: {} GHz'.format(f_res/1e9))
     legend()
+    plt.savefig(os.path.join(Plot_Path, 's_parameters.pdf'))
+
 
 Zin = port.uf_tot/port.if_tot
 figure()
@@ -165,4 +178,5 @@ legend()
 ylabel('Zin (Ohm)')
 xlabel('Frequency (GHz)')
 
+plt.savefig(os.path.join(Plot_Path, 'impedance.pdf'))
 show()

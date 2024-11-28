@@ -100,7 +100,7 @@ substrate_kappa  = 1e-3 * 2*pi*2.45e9 * EPS0*substrate_epsR
 materialList['substrate'] = CSX.AddMaterial( 'substrate', epsilon=substrate_epsR, kappa=substrate_kappa)
 
 # patch width (resonant length) in x-direction
-patch_width  = 32 #
+patch_width  = 32 
 # patch length in y-direction
 patch_length = 40
 
@@ -114,7 +114,7 @@ SimBox = np.array([200, 200, 150])
 
 wavelength_min = (C0/(f0+fc))
 wavelength_min_u = wavelength_min / unit
-mesh_res = wavelength_min/20
+resolution_u = wavelength_min_u / 20
 
 ### Generate properties, primitives and mesh-grid
 #initialize the mesh with the "air-box" dimensions
@@ -134,8 +134,8 @@ stop_patch  = [ patch_width/2 , patch_length/2, substrate_thickness]
 materialList['patch'].AddBox(priority=10, start=start_patch, stop=stop_patch) # add a box-primitive to the metal property 'patch'
 
 
-# FDTD.AddEdges2Grid(dirs='xy', properties=materialList['patch'], metal_edge_res=mesh_res/2)
-third_array = np.array([-mesh_res / 3, 2 * mesh_res / 3]) / 2
+# FDTD.AddEdges2Grid(dirs='xy', properties=materialList['patch'], metal_edge_res=resolution_u/2)
+third_array = np.array([-resolution_u / 3, 2 * resolution_u / 3]) / 2
 mesh.x = np.concatenate((mesh.x, start_patch[0] + third_array, stop_patch[0] - third_array))
 mesh.y = np.concatenate((mesh.y, start_patch[1] + third_array, stop_patch[1] - third_array))
 
@@ -143,8 +143,6 @@ mesh.y = np.concatenate((mesh.y, start_patch[1] + third_array, stop_patch[1] - t
 start_subs = [-substrate_width/2, -substrate_length/2, 0]
 stop_subs  = [ substrate_width/2,  substrate_length/2, substrate_thickness]
 materialList['substrate'].AddBox( priority=0, start=start_subs, stop=stop_subs)
-
-
 
 # apply the excitation & resist as a current source
 feed_pos = -6 # feeding position in x-direction
@@ -163,16 +161,25 @@ mesh.z = np.concatenate((mesh.z, linspace(0,substrate_thickness,5)))
 
 # create ground (same size as substrate)
 start_gnd = [-substrate_width/2, -substrate_length/2, 0]
-stop_gnd = [substrate_width/2, substrate_length/2, substrate_thickness]
+stop_gnd = [substrate_width/2, substrate_length/2, 0]
 materialList['gnd'].AddBox(start_gnd, stop_gnd, priority=10)
 
 mesh.x = np.concatenate((mesh.x, np.array([start_gnd[0], stop_gnd[0]])))
 mesh.y = np.concatenate((mesh.y, np.array([start_gnd[1], stop_gnd[1]])))
 
+print(f"resolution_U: {resolution_u}")
+print("mesh.x: {mesh.x}\r\n", mesh.x)
+print("mesh.y: {mesh.y}\r\n", mesh.y)
+print("mesh.z: {mesh.z}\r\n", mesh.z)
 
-mesh.x = SmoothMeshLines(mesh.x, mesh_res, 1.4)
-mesh.y = SmoothMeshLines(mesh.x, mesh_res, 1.4)
-mesh.z = SmoothMeshLines(mesh.x, mesh_res, 1.4)
+mesh.x = SmoothMeshLines(mesh.x, resolution_u, 1.4)
+mesh.y = SmoothMeshLines(mesh.y, resolution_u, 1.4)
+mesh.z = SmoothMeshLines(mesh.z, resolution_u, 1.4)
+
+print("mesh.x: {mesh.x}\r\n", mesh.x)
+print("mesh.y: {mesh.y}\r\n", mesh.y)
+print("mesh.z: {mesh.z}\r\n", mesh.z)
+
 
 openEMS_grid.AddLine('x', mesh.x)
 openEMS_grid.AddLine('y', mesh.y)
@@ -180,11 +187,32 @@ openEMS_grid.AddLine('z', mesh.z)
 
 
 #######################################################################################################################################
-# PORTS
+# DUMP BOXES
 #######################################################################################################################################
 
 # Add the nf2ff recording box
+'''
+@brief: Creates a near2farfield-box
+@start: by default lowest index in the grid +2/+1 (depending on BC, for MUR=2:  BC_size[2*n)
+@stop: by defualt highest index in the grid -2/-1 (depending on BC, for MUR=2: -1*BC_size[2*n+1]-1)
+@directions / @mirrors: if the boundary is a PMC or PEC scattering in this direction is not considered, and is set to "false" in the directions-array / seen as magnetic / electric mirrors instead.
+NOTE: make sure to call this function only after the entire grid is defined.
+'''
+
 nf2ff = FDTD.CreateNF2FFBox()
+
+dump_boxes = {}
+## define dump boxes
+et_start = [mesh.x[0], mesh.y[0], substrate_thickness]
+et_stop  = [mesh.x[-1], mesh.y[-1], substrate_thickness]
+dump_boxes['et'] = CSX.AddDump( 'Et_', dump_mode=2 ) # cell interpolated
+dump_boxes['et'].AddBox(et_start, et_stop, priority=0 )
+dump_boxes['ht'] = CSX.AddDump(  'Ht_', dump_type=1, dump_mode=2 ) # cell interpolated
+dump_boxes['ht'].AddBox(et_start, et_stop, priority=0 )
+
+#######################################################################################################################################
+# SIMULATION
+#######################################################################################################################################
 
 ### Run the simulation
 CSX_file = os.path.join(Sim_Path, 'simp_patch.xml')
@@ -197,7 +225,7 @@ os.system(AppCSXCAD_BIN + ' "{}"'.format(CSX_file))
 if sim_enabled:
 	FDTD.Run(Sim_Path, cleanup=True, debug_material=True, debug_pec=True, debug_operator=True, debug_boxes=True, debug_csx=True, verbose=3)
 
-Sim_Path
+
 #######################################################################################################################################
 # POST_PROCESSING
 #######################################################################################################################################
@@ -232,6 +260,7 @@ else:
     xlabel('Theta (deg)')
     title('Frequency: {} GHz'.format(f_res/1e9))
     legend()
+    plt.savefig(os.path.join(Plot_Path, 's_prameters.pdf'))
 
 Zin = port.uf_tot/port.if_tot
 figure()
@@ -241,5 +270,6 @@ grid()
 legend()
 ylabel('Zin (Ohm)')
 xlabel('Frequency (GHz)')
+plt.savefig(os.path.join(Plot_Path, 'impedance.pdf'))
 
 show()
