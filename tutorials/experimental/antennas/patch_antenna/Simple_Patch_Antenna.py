@@ -9,7 +9,7 @@
  (c) 2015-2023 Thorsten Liebig <thorsten.liebig@gmx.de>
 
 """
-
+import shutil
 ### Import Libraries
 import os, tempfile
 from pylab import *
@@ -19,7 +19,18 @@ from openEMS import openEMS
 from openEMS.physical_constants import *
 
 ### General parameter setup
-Sim_Path = os.path.join(tempfile.gettempdir(), 'Simp_Patch')
+## SIMULATION FOLDER SETUP
+currDir = os.getcwd()
+file_name = os.path.basename(__file__).strip('.py')
+Plot_Path = os.path.join(currDir, file_name)
+Sim_Path = os.path.join(Plot_Path, file_name)
+if not (os.path.exists(Plot_Path)):
+    os.mkdir(Plot_Path)
+    os.mkdir(Sim_Path)
+else:
+    shutil.rmtree(Sim_Path)
+    os.mkdir(Sim_Path)
+            
 
 post_proc_only = False
 
@@ -111,7 +122,7 @@ if 0:  # debugging only
     os.system(AppCSXCAD_BIN + ' "{}"'.format(CSX_file))
 
 if not post_proc_only:
-    FDTD.Run(Sim_Path, verbose=3, cleanup=True)
+	FDTD.Run(Sim_Path, cleanup=True, debug_material=True, debug_pec=True, debug_operator=True, debug_boxes=True, debug_csx=True, verbose=3)
 
 
 ### Post-processing and plotting
