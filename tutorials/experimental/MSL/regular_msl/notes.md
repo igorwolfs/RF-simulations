@@ -107,12 +107,8 @@ For S-parameter calculation examples, chack the msl_s_param.py file. Important i
 
 It's tough to measure the field above since it gets distorted and is also not the mode through which you transport the energy.
 
-# TODO
-## Boundary conditions
-### Edge fringe fields
-Dive deeper into why boundary conditions lead to field fringin at the edges, and how to solve it
-- Perhaps increasing the resolution at the edges will solve this problem?
-- Perhaps using different boundary conditions will solve this problem?
-- Perhaps moving the excitation source will solve the problem
 
-### Uniform lighting up of the MSL when being excited
+# Line Termination
+The electromagnetic energy is transferred through the EM waves outside the conductor. The properties of the energy transfer are governed by the current (magnetic) and the voltage (electric) inside the conductor. 
+This is why termination of the transmission line with the characteristic impedance Z0, will ensure a correct termination of the waves without reflections. This would not have been the case were the EM-energy transfer governed by the medium only.
+
