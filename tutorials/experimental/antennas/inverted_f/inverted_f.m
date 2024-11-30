@@ -32,7 +32,6 @@
 #############################################################################################
 
 
-
 addpath('~/opt/openEMS/share/openEMS/matlab');
 addpath('~/opt/openEMS/share/CSXCAD/matlab');
 addpath('~/opt/openEMS/share/hyp2mat/matlab');
@@ -41,12 +40,6 @@ close all
 clear
 clc
 
-
-%% prepare simulation folder
-
-Sim_CSX = strcat([mfilename 'xml'])
-[status, message, messageid] = rmdir( mfilename, 's' ); % clear previous directory
-[status, message, messageid] = mkdir( mfilename ); % create empty simulation folder
 
 ###############################################################################################
 ###################################### SET CONSTANTS ###########################################
@@ -99,6 +92,7 @@ SimBox = [substrate.width*2 substrate.length*2 150];
 %% create substrate
 CSX = AddMaterial( CSX, 'substrate');
 CSX = SetMaterialProperty( CSX, 'substrate', 'Epsilon',substrate.epsR, 'Kappa', substrate.kappa);
+
 start = [-substrate.width/2  -substrate.length/2                    0];
 stop  = [ substrate.width/2   substrate.length/2  substrate.thickness];
 CSX = AddBox( CSX, 'substrate', 1, start, stop );
@@ -161,12 +155,16 @@ CSX = AddBox(CSX, 'groundplane', 10, start,stop);
 %% create ifa -> Create the inverted f-antenna creation. (height is 0)
 CSX = AddMetal( CSX, 'ifa' ); % create a perfect electric conductor (PEC)
 tl = [0,substrate.length/2-ifa.e,substrate.thickness];   % translate
+
 start = [0 0.5 0] + tl;
 stop = start + [ifa.wf ifa.h-0.5 0];
 CSX = AddBox( CSX, 'ifa', 10,  start, stop);  % feed element
+
+
 start = [-ifa.fp 0 0] + tl;
 stop =  start + [-ifa.w1 ifa.h 0];
 CSX = AddBox( CSX, 'ifa', 10,  start, stop);  % short circuit stub
+
 start = [(-ifa.fp-ifa.w1) ifa.h 0] + tl;
 stop = start + [ifa.l -ifa.w2 0];
 CSX = AddBox( CSX, 'ifa', 10, start, stop);   % radiating element
@@ -206,12 +204,16 @@ start = [mesh.x(4)     mesh.y(4)     mesh.z(4)];
 stop  = [mesh.x(end-3) mesh.y(end-3) mesh.z(end-3)];
 [CSX nf2ff] = CreateNF2FFBox(CSX, 'nf2ff', start, stop);
 
-%% prepare simulation folder
-Sim_Path = 'tmp_IFA';
-Sim_CSX = 'IFA.xml';
 
-try confirm_recursive_rmdir(false,'local'); end
+%% prepare simulation folder
+plot_path = strcat(mfilename);
+Sim_Path = strcat(plot_path, "/", mfilename);
+Sim_CSX = strcat([mfilename 'xml']);
+
 [status, message, messageid] = rmdir( Sim_Path, 's' ); % clear previous directory
+[status, message, messageid] = rmdir( plot_path, 's' ); % clear previous directory
+
+[status, message, messageid] = mkdir( plot_path ); % create empty simulation folder
 [status, message, messageid] = mkdir( Sim_Path ); % create empty simulation folder
 
 
@@ -229,18 +231,19 @@ end
 
 
 %% run openEMS
-RunOpenEMS( Sim_Path, Sim_CSX);  %RunOpenEMS( Sim_Path, Sim_CSX, '--debug-PEC -v');
+RunOpenEMS( Sim_Path, Sim_CSX, "verbose", 3);  %RunOpenEMS( Sim_Path, Sim_CSX, '--debug-PEC -v');
+
 
 %% postprocessing & do the plots
 freq = linspace( max([1e9,f0-fc]), f0+fc, 501 );
 port = calcPort(port, Sim_Path, freq);
 
-Zin = port.uf.tot ./ port.if.tot;
-s11 = port.uf.ref ./ port.uf.inc;
 P_in = real(0.5 * port.uf.tot .* conj( port.if.tot )); % antenna feed power
 
+
+Zin = port.uf.tot ./ port.if.tot;
 % plot feed point impedance
-figure
+hf = figure
 plot( freq/1e6, real(Zin), 'k-', 'Linewidth', 2 );
 hold on
 grid on
@@ -249,16 +252,24 @@ title( 'feed point impedance' );
 xlabel( 'frequency f / MHz' );
 ylabel( 'impedance Z_{in} / Ohm' );
 legend( 'real', 'imag' );
+save_path = strcat(plot_path, '/', 'impedance', '.pdf');
+print (hf, save_path, "-dpdf");
+
+close all;
 
 % plot reflection coefficient S11
-figure
+s11 = port.uf.ref ./ port.uf.inc;
+
+hf = figure
 plot( freq/1e6, 20*log10(abs(s11)), 'k-', 'Linewidth', 2 );
 grid on
 title( 'reflection coefficient S_{11}' );
 xlabel( 'frequency f / MHz' );
 ylabel( 'reflection coefficient |S_{11}|' );
 
-drawnow
+save_path = strcat(plot_path, '/', 's_parameters', '.pdf');
+print (hf, save_path, "-dpdf");
+close all;
 
 %% NFFF contour plots %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %find resonance frequency from s11
@@ -269,9 +280,21 @@ f_res = freq(f_res_ind);
 disp( 'calculating 3D far field pattern and dumping to vtk (use Paraview to visualize)...' );
 thetaRange = (0:2:180);
 phiRange = (0:2:360) - 180;
-nf2ff = CalcNF2FF(nf2ff, Sim_Path, f_res, thetaRange*pi/180, phiRange*pi/180,'Verbose',1,'Outfile','3D_Pattern.h5');
+nf2ff = CalcNF2FF(nf2ff, Sim_Path, f_res, thetaRange*pi/180, phiRange*pi/180);
 
-plotFF3D(nf2ff)
+%{
+figure()
+# Normalize electric field + add directivity to scale the plot so the highest value shows the actual max directivity.
+E_norm = 20.0*np.log10(nf2ff_res.E_norm(1)/np.max(nf2ff_res.E_norm(1))) + 10.0*np.log10(nf2ff_res.Dmax(1)));
+plot(theta, np.squeeze(E_norm(:,0)), 'k-', linewidth=2, label='xz-plane')
+plot(theta, np.squeeze(E_norm(:,1)), 'r--', linewidth=2, label='yz-plane')
+grid()
+ylabel('Directivity (dBi)')
+xlabel('Theta (deg)')
+title('Frequency: {} GHz'.format(f_res/1e9))
+legend()
+plt.savefig(os.path.join(Plot_Path, 'e_field_resonance.pdf'));
+
 
 % display power and directivity
 disp( ['radiated power: Prad = ' num2str(nf2ff.Prad) ' Watt']);
@@ -280,3 +303,4 @@ disp( ['efficiency: nu_rad = ' num2str(100*nf2ff.Prad./real(P_in(f_res_ind))) ' 
 
 E_far_normalized = nf2ff.E_norm{1} / max(nf2ff.E_norm{1}(:)) * nf2ff.Dmax;
 DumpFF2VTK([Sim_Path '/3D_Pattern.vtk'],E_far_normalized,thetaRange,phiRange,1e-3);
+%}
