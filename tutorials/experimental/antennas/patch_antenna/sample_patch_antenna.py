@@ -241,17 +241,30 @@ grid()
 legend()
 ylabel('S-Parameter (dB)')
 xlabel('Frequency (GHz)')
+plt.savefig(os.path.join(Plot_Path, 's_prameters.pdf'))
+show()
 
+'''
+Dmax: maximal directivity
+=> : m_maxDir = 4*M_PI*P_max / m_radPower;
+    - m_radPower: the normalized power in all directions
+    - P_max: the maximum power in one specific direction in the far-field
+theta: [-180 -> 180] is the angle with the z-axis
+phi: [0 -> 90] is the angle in the xy plane
+'''
+
+# Check if the reflection drops extremely low somewhere
 idx = np.where((s11_dB<-10) & (s11_dB==np.min(s11_dB)))[0]
 if not len(idx)==1:
     print('No resonance frequency found for far-field calulation')
 else:
+    # If it does, get that frequency ((f_res = f[idx[0]]), which is the frequency where S11 is minimal.
     f_res = f[idx[0]]
     theta = np.arange(-180.0, 180.0, 2.0)
     phi   = [0., 90.]
     nf2ff_res = nf2ff.CalcNF2FF(Sim_Path, f_res, theta, phi, center=[0,0,1e-3])
-
     figure()
+	# Normalize electric field + add directivity to scale the plot so the highest value shows the actual max directivity.
     E_norm = 20.0*np.log10(nf2ff_res.E_norm[0]/np.max(nf2ff_res.E_norm[0])) + 10.0*np.log10(nf2ff_res.Dmax[0])
     plot(theta, np.squeeze(E_norm[:,0]), 'k-', linewidth=2, label='xz-plane')
     plot(theta, np.squeeze(E_norm[:,1]), 'r--', linewidth=2, label='yz-plane')
@@ -260,7 +273,9 @@ else:
     xlabel('Theta (deg)')
     title('Frequency: {} GHz'.format(f_res/1e9))
     legend()
-    plt.savefig(os.path.join(Plot_Path, 's_prameters.pdf'))
+    plt.savefig(os.path.join(Plot_Path, 'e_field_resonance.pdf'))
+print(f"d_max: {nf2ff_res.Dmax[0]}")
+
 
 Zin = port.uf_tot/port.if_tot
 figure()

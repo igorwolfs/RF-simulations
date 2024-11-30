@@ -158,6 +158,7 @@ else:
     nf2ff_res = nf2ff.CalcNF2FF(Sim_Path, f_res, theta, phi, center=[0,0,1e-3])
 
     figure()
+
     E_norm = 20.0*np.log10(nf2ff_res.E_norm[0]/np.max(nf2ff_res.E_norm[0])) + 10.0*np.log10(nf2ff_res.Dmax[0])
     plot(theta, np.squeeze(E_norm[:,0]), 'k-', linewidth=2, label='xz-plane')
     plot(theta, np.squeeze(E_norm[:,1]), 'r--', linewidth=2, label='yz-plane')
@@ -167,7 +168,6 @@ else:
     title('Frequency: {} GHz'.format(f_res/1e9))
     legend()
     plt.savefig(os.path.join(Plot_Path, 's_parameters.pdf'))
-
 
 Zin = port.uf_tot/port.if_tot
 figure()
