@@ -1,12 +1,7 @@
-# -*- coding: utf-8 -*-
 """
- Simple Patch Antenna Tutorial
-
- Tested with
-  - python 3.10
-  - openEMS v0.0.34+
-
- (c) 2015-2023 Thorsten Liebig <thorsten.liebig@gmx.de>
+Goal: 
+- simulate an inset-feed antenna resonator at 2.5 GHz.
+- add an MSL at 50 ohms to supply the resonator
 
 """
 
@@ -21,6 +16,7 @@ from openEMS.physical_constants import *
 import shutil
 
 APPCSXCAD_CMD = '~/opt/openEMS/bin/AppCSXCAD'
+
 sim_enabled = True
 
 
@@ -87,10 +83,35 @@ FDTD.SetGaussExcite( f0, fc )
 materialList = {}
 
 ## CREATE PATCH MATERIAL
+'''
+Feed patch calculated based on: 
+-> https://3g-aerial.biz/en/online-calculations/antenna-calculations/patch-antenna-online-calculator
+'''
+
 materialList['patch'] = CSX.AddMetal( 'patch' ) # create a perfect electric conductor (PEC)
-patch_dx  = 32 
+patch_dx = 32
 patch_dy = 40
-# patch_dz = 1.524
+patch_dz = 0
+patch_dy0 = 1+1+3.5
+patch_x0 = 10
+
+## CREATE FEED LINE
+
+'''
+Calculated using: https://www.emtalk.com/mscalc.php?er=3.38&h=1.524&h_units_list=hmm&f=2.5&Zo=200&EL=0&Operation=Synthesize&Wa=3.5288393627391&W_units_list=Wmm&La=0&L_units_list=Lmm
+WARNING: introducing a length here larger than a few 10 degrees will increase the reflection coefficient dramatically and thus decrease the antenna efficiency
+- MSL_dx = 40: the phase-shift for 2.5 GHz is about 180 degrees when it arrives at the feed point. 
+-> The entire wave will then simply be reflected
+- MSL_dx = 80: the phase-shift is supposed to be 360 degrees so barely any reflections, it seems however not entirely the case. It might also be that lots of energy gets lost somehow.
+It seems like MSL_dx = 15 creates the same impedance the patch antenna has when fed at its centre.
+-> To accurately guess the numbers require here, the best thing to do would be a parameter sweep, varying 
+'''
+
+materialList['mslfeed'] = CSX.AddMetal( 'mslfeed') # Create PEC feed for antenna signal
+msl_dx = 5
+msl_dy = 3.5
+msl_dz = 0
+
 ## CREATE GROUND PLANE
 materialList['gnd'] = CSX.AddMetal( 'gnd' ) # create a perfect electric conductor (PEC)
 
@@ -100,20 +121,17 @@ substrate_kappa  = 1e-3 * 2 * pi * 2.45e9 * EPS0 * substrate_epsR
 materialList['substrate'] = CSX.AddMaterial( 'substrate', epsilon=substrate_epsR, kappa=substrate_kappa)
 
 # patch width (resonant length) in x-direction
-#substrate setup
+# substrate setup
+'''
+WARNING: the ground plane for a microstrip patch antenna can also be too large.
+
+'''
 subs_dx  = 60
 subs_dy = 60
 subs_dz = 1.524
 
-lambda_exp_res = 2*patch_dy
-if (subs_dz > lambda_exp_res / 2):
-    raise ValueError(f"WARNING: dielectric height to large: {subs_dz} antenna wavelength: {lambda_exp_res}")
-
-if (subs_dz < lambda_exp_res / 80):
-    raise ValueError(f"WARNING: dielectric height too small {subs_dz} antenna wavelength: {lambda_exp_res}")
-
 # size of the simulation box
-SimBox = np.array([200, 200, 150])
+SimBox = np.array([240, 240, 150])
 
 wavelength_min = (C0/(f0+fc))
 wavelength_min_u = wavelength_min / unit
@@ -131,10 +149,31 @@ mesh.z = np.concatenate((mesh.z, np.array([-SimBox[2]/3, SimBox[2]*2/3])))
 #######################################################################################################################################
 
 ##! DEFINING BOXES
-# create patch
-start_patch = [-patch_dx/2, -patch_dy/2, subs_dz]
-stop_patch  = [ patch_dx/2 , patch_dy/2, subs_dz]
-materialList['patch'].AddBox(priority=10, start=start_patch, stop=stop_patch) # add a box-primitive to the metal property 'patch'
+start_patch = []
+stop_patch = []
+# * CREATE PATCH
+# upper patch
+start_patch.append([-patch_dx/2, -patch_dy/2, subs_dz])
+stop_patch.append([ patch_dx/2 , -patch_dy0/2, subs_dz])
+
+# middle patch
+start_patch.append([-patch_dx/2+patch_x0, -patch_dy/2, subs_dz])
+stop_patch.append([ patch_dx/2 , patch_dy/2, subs_dz])
+
+# lower patch
+start_patch.append([-patch_dx/2, patch_dy0/2, subs_dz])
+stop_patch.append([ patch_dx/2 , patch_dy/2, subs_dz])
+
+for i in range(3):  
+    materialList['patch'].AddBox(priority=10, start=start_patch[i], stop=stop_patch[i]) # add a box-primitive to the metal property 'patch'
+
+
+# * MSL
+# create msl
+start_mslfeed = [(patch_x0 - msl_dx) - patch_dx/2, -msl_dy/2, subs_dz]
+stop_mslfeed  = [ patch_x0 - patch_dx / 2, msl_dy/2, subs_dz]
+materialList['mslfeed'].AddBox(priority=10, start=start_mslfeed, stop=stop_mslfeed) # add a box-primitive to the metal property 'patch'
+
 
 # create substrate
 start_subs = [-subs_dx/2, -subs_dy/2, 0]
@@ -143,17 +182,21 @@ materialList['substrate'].AddBox( priority=0, start=start_subs, stop=stop_subs)
 
 # apply the excitation & resist as a current source
 feed_dx = -patch_dx/2 # feeding position in x-direction (assume feeding at the edge)
-feed_R = 200 # feed resistance
+feed_R = 50 # feed resistance
 
-start_port = [feed_dx, 0, 0]
-stop_port  = [feed_dx, 0, subs_dz]
+start_port = [start_mslfeed[0] , 0, 0]
+stop_port  = [start_mslfeed[0] , 0, subs_dz]
 port = FDTD.AddLumpedPort(1, feed_R, start_port, stop_port, 'z', 1.0, priority=5) #, edges2grid='xy')
-
 
 
 ##! DEFINING GRID
 from CSXCAD.SmoothMeshLines import SmoothMeshLines
-third_array = np.array([-resolution_u / 3, 2 * resolution_u / 3]) / 2
+
+third_array = np.array([-1/3, 2/3]) * start_mslfeed[1]/2
+
+# Add extra cells for supply MSL
+# We probably don't need these thanks to out existing patch meshing
+mesh.y = np.concatenate((mesh.y, np.array([start_mslfeed[1], stop_mslfeed[1]]), start_mslfeed[1] - third_array, stop_mslfeed[1] + third_array))
 
 # Add extra cells from lumped port
 mesh.x = np.concatenate((mesh.x, np.array([start_port[0]]), start_port[0] + third_array))
@@ -161,6 +204,7 @@ mesh.y = np.concatenate((mesh.y, np.array([start_port[1]]), start_port[1] + thir
 
 # add extra cells to discretize the substrate thickness
 mesh.z = np.concatenate((mesh.z, linspace(0,subs_dz,5)))
+
 
 # create ground (same size as substrate)
 start_gnd = [-subs_dx/2, -subs_dy/2, 0]
@@ -171,9 +215,12 @@ mesh.x = np.concatenate((mesh.x, np.array([start_gnd[0], stop_gnd[0]])))
 mesh.y = np.concatenate((mesh.y, np.array([start_gnd[1], stop_gnd[1]])))
 
 # Add patch 
+third_array = np.array([-resolution_u / 3, 2 * resolution_u / 3]) / 2
+
 # FDTD.AddEdges2Grid(dirs='xy', properties=materialList['patch'], metal_edge_res=resolution_u/2)
-mesh.x = np.concatenate((mesh.x, start_patch[0] - third_array, stop_patch[0] + third_array))
-mesh.y = np.concatenate((mesh.y, start_patch[1] - third_array, stop_patch[1] + third_array))
+for i in range(3):
+    mesh.x = np.concatenate((mesh.x, start_patch[i][0] - third_array, stop_patch[i][0] + third_array))
+    mesh.y = np.concatenate((mesh.y, start_patch[i][1] - third_array, stop_patch[i][1] + third_array))
 
 
 print(f"resolution_U: {resolution_u}")
@@ -222,6 +269,20 @@ dump_boxes['ht'].AddBox(et_start, et_stop, priority=0 )
 #######################################################################################################################################
 # SIMULATION
 #######################################################################################################################################
+
+### CHECKS
+lambda_exp_res = 2*patch_dy
+if (subs_dz > lambda_exp_res / 2):
+    raise ValueError(f"WARNING: dielectric height to large: {subs_dz} antenna wavelength: {lambda_exp_res}")
+
+if (subs_dz < lambda_exp_res / 80):
+    raise ValueError(f"WARNING: dielectric height too small {subs_dz} antenna wavelength: {lambda_exp_res}")
+
+if (msl_dx/lambda_exp_res%1 > 0.1) and (msl_dx/lambda_exp_res%1 < 0.9):
+    pass
+    # raise ValueError(f"WARNING: msl length is {msl_dx} antenna wavelength: {lambda_exp_res}, electric length: {(msl_dx / lambda_exp_res) * 360}")
+
+
 
 ### Run the simulation
 CSX_file = os.path.join(Sim_Path, 'simp_patch.xml')

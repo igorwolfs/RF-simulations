@@ -1,13 +1,6 @@
 # -*- coding: utf-8 -*-
 """
- Simple Patch Antenna Tutorial
-
- Tested with
-  - python 3.10
-  - openEMS v0.0.34+
-
- (c) 2015-2023 Thorsten Liebig <thorsten.liebig@gmx.de>
-
+Simple Patch antenna example
 """
 
 ### Import Libraries
@@ -21,8 +14,9 @@ from openEMS.physical_constants import *
 import shutil
 
 APPCSXCAD_CMD = '~/opt/openEMS/bin/AppCSXCAD'
-sim_enabled = True
 
+sim_enabled = True
+side_feed = False
 
 ### CONSTANTS
 from openEMS.physical_constants import *
@@ -100,10 +94,11 @@ substrate_kappa  = 1e-3 * 2*pi*2.45e9 * EPS0*substrate_epsR
 materialList['substrate'] = CSX.AddMaterial( 'substrate', epsilon=substrate_epsR, kappa=substrate_kappa)
 
 
-#substrate setup
-subs_dx  = 60
+# substrate setup
+subs_dx = 60
 subs_dy = 60
 subs_dz = 1.524
+
 
 # size of the simulation box
 SimBox = np.array([200, 200, 150])
@@ -135,8 +130,13 @@ stop_subs  = [ subs_dx/2,  subs_dy/2, subs_dz]
 materialList['substrate'].AddBox( priority=0, start=start_subs, stop=stop_subs)
 
 # apply the excitation & resist as a current source
-feed_dx = -6 # feeding position in x-direction
-feed_R = 50     #feed resistance
+if side_feed:
+    feed_dx = -patch_dx / 2
+    feed_R = 200 # 200 ohms is the side-feed resistance in this situation: 
+                 # -> https://www.emtalk.com/mpacalc.php?er=3.38&h=1.524&h_units_list=hmm&fr=2.041900591494&Operation=Analyze&La=32&L_units_list=Lmm&Wa=40&W_units_list=Wmm&Rin=474.30301029192
+else:  
+    feed_dx = -6 # feeding position in x-direction
+    feed_R = 50     #feed resistance
 
 start_port = [feed_dx, 0, 0]
 stop_port  = [feed_dx, 0, subs_dz]
@@ -214,6 +214,13 @@ dump_boxes['ht'].AddBox(et_start, et_stop, priority=0 )
 #######################################################################################################################################
 # SIMULATION
 #######################################################################################################################################
+lambda_exp_res = 2*patch_dy
+if (subs_dz > lambda_exp_res / 2):
+    raise ValueError(f"WARNING: dielectric height to large: {subs_dz} antenna wavelength: {lambda_exp_res}")
+
+if (subs_dz < lambda_exp_res / 80):
+    raise ValueError(f"WARNING: dielectric height too small {subs_dz} antenna wavelength: {lambda_exp_res}")
+
 
 ### Run the simulation
 CSX_file = os.path.join(Sim_Path, 'simp_patch.xml')
