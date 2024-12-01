@@ -3,12 +3,12 @@
 ### Voltage probes
 The octave-port simulation of the stripline has voltage probes placed above the stripline, and separately below the stripline.
 
-It seems that doing this improves the accuracy of the s-parameter, since there is field above and below, and this way the measurement is more complete.
+It seems that doing this improves the accuracy of the s-parameter, since the energy is contained in the EM-fields above and below in the form of a TEM wave. (TEM Wave: no electric / magnetic field in the direction of propagation)
 
 ### Voltage probe dimensions
 VERY IMPORTANT: the potential between 2 points is the path-integral of the electric field along any path between the first and last point.
 
-SO: whatever path we pass along the electric field, the orientation of the voltage probe must be such that the voltage values calculated are sensible, i.e.: have the right orientation.
+SO: whatever path we pass along the electric field, the orientation of the voltage probe must be such that the voltage values calculated are sensible, i.e.: have the right orientation. (In this case: between the 2 ground planes)
 
 ### Current probe dimensions
 The current probes have a z-dimension of 0.250 mm given a total height of 0.5 mm in each direction (so dielectric height of 1 mm).

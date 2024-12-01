@@ -46,7 +46,7 @@ Because of bad port dimensions, regions are excited which don't correspond to th
 **Lumped Port Measurements**
 Important to note is that everything in a lumped port happens where the lumped port is positioned, so that includes
 - The current measurement (in the width direction)
-- The voltage measurement (in the height direction)
+- The voltage measurement (in the height direction between the copper planes)
 - The excitation (in the width/height plane)
 
 Not sure if this is the place of excitation is an optimal location for the measurement of signals.
@@ -160,7 +160,7 @@ https://www.ittc.ku.edu/~jstiles/723/handouts/Transmission%20Line%20Input%20Impe
 
 ## Why is the S-parameter calculated with a reference impedance of 50 ohms, but the ports have an impedance of 0 ohms? Why not another arbitrary number?
 ### Context
-Wee see that in "structured.py", using the CalcPort function the reference impedance of 50 ohms is passed.
+Wee see that in "notchfilter.py", using the CalcPort function the reference impedance of 50 ohms is passed.
 - It is used to calculate the phase-shift of the voltage
 - It is used to calculate the incoming current and voltage from the total incoming current and voltage.
 These voltages are used further on to calculate the S-parameters.

@@ -309,7 +309,7 @@ else:
     title('Frequency: {} GHz'.format(f_res/1e9))
     legend()
     plt.savefig(os.path.join(Plot_Path, 'e_field_resonance.pdf'))
-	
+
 print(f"Radiated power: {nf2ff_res.Prad}")
 print(f"Directivity dmax: {nf2ff_res.Dmax}, {10*log10(nf2ff_res.Dmax)} dBi")
 

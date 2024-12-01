@@ -4,8 +4,17 @@
 A patch antenna is a rectangular copper pour (width W, length L) sitting on top of a dielectric of thickness h.
 The dielectric has relative permittivity epsilon_r.
 
-### Hieght
+### Height
 The height must be between lambda > height > lambda / 40, to prevent degraded efficiency.
+
+**Effect of height change on antenna radiation**
+Taking the regular example and changing the height
+- Increasing the height 1.524 -> 2: 
+    - increases the fringing, so reduces the resonance frequency because it makes the patch seem longer. (2.445 -> 43 GHz)
+    - It seems to introduce more reflections: (S11: -30 -> -25 dB at resonance), which is not due to dielectric loss, but reflections, since the feed impedance of 50 ohms is no longer equal to the antenna feed impedance at the point of x=-6 when changing the height.
+- Reducing the height 1 -> 2:
+    - Reduces the fringing, so increases the resonance frequency (2.445 GHz -> 2.465 GHz)
+    - S-parameter stays the same
 
 ### Length
 The length L (in line with the feed point), determines the resonance frequency.
@@ -22,7 +31,7 @@ The width controls the impedance.
 
 The width also influences the radiation pattern (see formulas in source).
 
-### Operating principle
+## Operating principle
 - The bandwidth of a patch antenna is VERY SMALL.
 - It operates at 2-4 % lower frequency than designed for.
 
@@ -42,9 +51,40 @@ However, a smaller epsilon_r also makes the wavelength larger, which thus makes 
 
 This is opposite to an MSL, where you want the fields to be contained and be as close to a TEM-mode as possible, with as litle radiation as possible.
 
+## Feeding
 
 ## Sources
+On geometry and basics,
 - https://www.antenna-theory.com/antennas/patches/antenna.php
+
+On ways of feeding a microstrip antenna.
+- https://www.antenna-theory.com/antennas/patches/patch3.php
+
+On tradeoffs when designing a microstrip antenna.
+- https://www.antenna-theory.com/antennas/patches/patch4.php
+
+
+# Simulation
+## Port feed impedance
+For some reason adding a port feed impedance of 50 ohms positively influences the reflection (so coefficient goes down).
+
+The feed impedance determines the momentary magnetic field that comes from the electric field excitation set around thatregion (feed_x, 0, 0->substrate_dz).
+
+So if that ratio of current vs voltage doesn't correspond to the ratio of current vs voltage of that medium, you'll get reflections.
+
+HOWEVER: an antenna with dimensions 
+- plane dimensions (32, 40, 0)
+- substrate height: 1.524, eps_r: 3.38
+
+Should have an impedance of 500 ohms. So why does changing the impedance to 200 ohms not improve the situation?
+
+Answer: Because this is the impedance at the feed point x=-6, The feed point at the edges is much higher, due to the low current (short-circuit) and high voltage there.
+
+The feed impedance at the edge can be found using this calculator:
+https://www.emtalk.com/mpacalc.php?er=3.38&h=1.524&h_units_list=hmm&fr=2.041900591494&Operation=Analyze&La=32&L_units_list=Lmm&Wa=40&W_units_list=Wmm&Rin=474.30301029192
+
+
+
 # Near-field to Far field transform
 ## General idea
 Far-away from the source, field components are approximately spherical waves. So higher-order terms can be neglected.
