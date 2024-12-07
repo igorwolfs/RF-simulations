@@ -1,9 +1,35 @@
 """
 Goal: 
-- simulate an inset-feed antenna resonator at 2.5 GHz.
+- Simulate a patch antenna for 1.575 GHz (L1 band)
 - add an MSL at 50 ohms to supply the resonator
+- Sweep for parameters until you find the best one
+- Fix the known parameters (like dielectric height, dielectric permittivity)
+- Loss tangent is 0.04-0.05 (tan(delta))
+-> Convert this to kappa
+Started using this calculator: https://3g-aerial.biz/en/online-calculations/antenna-calculations/patch-antenna-online-calculator
+
+RESULTS
+Javascript Version 2022-06-18 by 3G-Aerial
+Patch Antenna Calculation
+-------------------------------------------------------------
+#! Mean frequency of the range f: 1575 MHz
+#! Antenna input impedance Zo: 50 Ω
+#! Dielectric constant of the substrate er: 4.5
+Substrate height h: 1.5 mm
+Wavelength λ: 190 mm
+-------------------------------------------------------------
+Patch size W: 57.4 mm
+Patch size L: 44.6 mm
+Minimum gMath.round plane size eL: 90.7 mm
+Minimum gMath.round plane size eW: 103 mm
+-------------------------------------------------------------
+Patch input impedance Zp: 199 Ω
+Distance x0 to match input impedance 50 Ω: 14.9 mm
+Gap width g: 1.02 mm
+Microstrip 'feeder' width Wt: 2.3 mm
 
 """
+import argparse
 
 ### Import Libraries
 import os, tempfile
@@ -39,9 +65,11 @@ if sim_enabled:
 
 ### FDTD setup
 CSX = ContinuousStructure()
-## * Limit the simulation to 30k timesteps
-## * Define a reduced end criteria of -40dB
-max_timesteps = 30000
+'''
+#! WARNING: 
+- Using the right excitation frequency range is very important here.
+'''
+max_timesteps = 150000
 end_criteria = 1e-4
 FDTD = openEMS(NrTS=max_timesteps, EndCriteria=end_criteria)
 FDTD.SetCSX(CSX)
@@ -71,9 +99,14 @@ mesh.z = np.array([])
 # EXCITATION Gaussian
 #######################################################################################################################################
 # setup FDTD parameter & excitation function
-f0 = 2e9 # center frequency
-fc = 1e9 # 20 dB corner frequency
+# f0 = 1.5e9 # center frequency
+# fc = 500e6 # 20 dB corner frequency
 
+'''
+#! WARNING: having the right 
+'''
+f0 = 1.5e9 # center frequency
+fc = 0.5e9 # 20 dB corner frequency
 
 FDTD.SetGaussExcite( f0, fc )
 
@@ -84,30 +117,15 @@ FDTD.SetGaussExcite( f0, fc )
 materialList = {}
 
 ## CREATE PATCH MATERIAL
-'''
-Feed patch calculated based on: 
--> https://3g-aerial.biz/en/online-calculations/antenna-calculations/patch-antenna-online-calculator
-'''
 
 materialList['patch'] = CSX.AddMetal( 'patch' ) # create a perfect electric conductor (PEC)
-patch_dx = 32
-patch_dy = 40
+patch_dx = 45
+patch_dy = 58
 patch_dz = 0
-patch_dy0 = 1+1+3.5
-patch_x0 = 10
+patch_dy0 = 1+1+2.5
+patch_x0 = 15
 
 ## CREATE FEED LINE
-
-'''
-Calculated using: https://www.emtalk.com/mscalc.php?er=3.38&h=1.524&h_units_list=hmm&f=2.5&Zo=200&EL=0&Operation=Synthesize&Wa=3.5288393627391&W_units_list=Wmm&La=0&L_units_list=Lmm
-WARNING: introducing a length here larger than a few 10 degrees will increase the reflection coefficient dramatically and thus decrease the antenna efficiency
-- MSL_dx = 40: the phase-shift for 2.5 GHz is about 180 degrees when it arrives at the feed point. 
--> The entire wave will then simply be reflected
-- MSL_dx = 80: the phase-shift is supposed to be 360 degrees so barely any reflections, it seems however not entirely the case. It might also be that lots of energy gets lost somehow.
-It seems like MSL_dx = 15 creates the same impedance the patch antenna has when fed at its centre.
--> To accurately guess the numbers require here, the best thing to do would be a parameter sweep, varying all parameters bit by bit (ground plane size, width, height, ..)
-'''
-
 materialList['mslfeed'] = CSX.AddMetal( 'mslfeed') # Create PEC feed for antenna signal
 msl_dx = 5
 msl_dy = 3.5
@@ -117,9 +135,9 @@ msl_dz = 0
 materialList['gnd'] = CSX.AddMetal( 'gnd' ) # create a perfect electric conductor (PEC)
 
 ## SUBSTRATE
-substrate_epsR   = 3.38
-substrate_kappa  = 1e-3 * 2 * pi * 2.45e9 * EPS0 * substrate_epsR
-materialList['substrate'] = CSX.AddMaterial( 'substrate', epsilon=substrate_epsR, kappa=substrate_kappa)
+substrate_epsR   = 4.5
+# substrate_kappa  = 1e-3 * 2 * pi * 2.45e9 * EPS0 * substrate_epsR
+materialList['substrate'] = CSX.AddMaterial( 'substrate', epsilon=substrate_epsR)# , kappa=substrate_kappa)
 
 # patch width (resonant length) in x-direction
 # substrate setup
@@ -127,12 +145,12 @@ materialList['substrate'] = CSX.AddMaterial( 'substrate', epsilon=substrate_epsR
 WARNING: the ground plane for a microstrip patch antenna can also be too large.
 
 '''
-subs_dx  = 60
-subs_dy = 60
-subs_dz = 1.524
+subs_dx  = 100
+subs_dy = 100
+subs_dz = 1.5
 
 # size of the simulation box
-SimBox = np.array([240, 240, 150])
+SimBox = np.array([260, 260, 150])
 
 wavelength_min = (C0/(f0+fc))
 wavelength_min_u = wavelength_min / unit
@@ -303,7 +321,7 @@ if sim_enabled:
 #######################################################################################################################################
 ### Run the simulation
 
-f = np.linspace(max(1e9,f0-fc),f0+fc,801)
+f = np.linspace(max(1e9,f0-fc),f0+fc,401)
 port.CalcPort(Sim_Path, f)
 s11 = port.uf_ref/port.uf_inc
 s11_dB = 20.0*np.log10(np.abs(s11))
