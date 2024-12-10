@@ -77,3 +77,9 @@ SMA edge launch connector assembly: https://www.youtube.com/watch?v=lFLgEpMB31M
 
 **USB Galvanic isolation**
 To protect laptop from possible overvoltages
+
+### VNA (Vector Network Analyzer)
+Buy a vector network analyzer for magnitude and impedance phase measurements.
+
+- Looks like the best one so far:https://eleshop.eu/litevna-5341.html
+(Lite VNA)
