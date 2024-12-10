@@ -19,3 +19,10 @@ An attenuator will probably also be required when using the power meter, since i
 OR: we could build one ourselves by ordering copper clad's, a soldering iron and some resistors.
 https://www.amazon.com/copper-clad-pcb/s?k=copper+clad+pcb
 
+# USB-port safety circuitry
+Make sure to buy some safety circuitry for your USB port in case some overcurrent or overvoltage happens on the chip through the power source
+
+Just buy some galvanic isolation usb ports such as this one: https://www.amazon.de/Isolator-Industrielle-Isolatoren-Geschwindigkeit-ADUM4160-Wie-gezeigt/dp/B0BQW71LPP/ref=asc_df_B0BQW71LPP?mcid=10b6da14b403313ba34c978b1566ad04&th=1&psc=1&tag=googshopde-21&linkCode=df0&hvadid=696459872814&hvpos=&hvnetw=g&hvrand=6023424831527551914&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9043142&hvtargid=pla-2323732968444&psc=1&gad_source=1
+
+# Oscilloscope RF probes
+Make sure to buy some 50 ohm oscilloscope RF probes + maybe some "high"-voltage probing stuff so you can go up to 50 volts without being scared about it.
