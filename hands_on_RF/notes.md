@@ -26,3 +26,8 @@ Just buy some galvanic isolation usb ports such as this one: https://www.amazon.
 
 # Oscilloscope RF probes
 Make sure to buy some 50 ohm oscilloscope RF probes + maybe some "high"-voltage probing stuff so you can go up to 50 volts without being scared about it.
+
+# RF probe
+Self-made RF-probe
+https://www.youtube.com/watch?v=C8SKiyJUAlU
+
