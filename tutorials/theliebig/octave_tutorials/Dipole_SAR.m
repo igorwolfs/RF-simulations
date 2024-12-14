@@ -13,6 +13,8 @@ close all
 clear
 clc
 
+addpath('~/opt/openEMS/share/openEMS/matlab');
+addpath('~/opt/openEMS/share/CSXCAD/matlab');
 %% switches & options...
 postprocessing_only = 0;
 
@@ -72,21 +74,21 @@ FDTD = SetBoundaryCond( FDTD, BC );
 CSX = InitCSX();
 
 %% Dipole
-CSX = AddMetal( CSX, 'Dipole' ); % create a perfect electric conductor (PEC)
+CSX = AddMetal( CSX, 'Dipole' ); % Create a perfect electric conductor (PEC)
 CSX = AddBox(CSX, 'Dipole', 1, [0 0 -dipole_length/2], [0 0 dipole_length/2]);
 
-% mesh lines for the dipole
+%%% mesh lines for the dipole
 mesh.x = 0;
 mesh.y = 0;
 mesh.z = [-dipole_length/2-[-1/3 2/3]*mesh_res_phantom dipole_length/2+[-1/3 2/3]*mesh_res_phantom];
 
-%% add the dielectrics
+%%% add the dielectrics
 for n=1:numel(phantom)
   CSX = AddMaterial( CSX, phantom{n}.name );
   CSX = SetMaterialProperty( CSX, phantom{n}.name, 'Epsilon', phantom{n}.epsR, 'Kappa', phantom{n}.kappa, 'Density', phantom{n}.density);
   CSX = AddSphere( CSX, phantom{n}.name, 10+n, [0 0 0], 1,'Transform',{'Scale',phantom{n}.radius, 'Translate', phantom{n}.center} ); 
 
-  %% mesh lines for the dielectrics
+  %%% mesh lines for the dielectrics
   mesh.x = [mesh.x phantom{n}.radius(1)*[-1 1]+phantom{n}.center(1) ];
   mesh.y = [mesh.y phantom{n}.radius(2)*[-1 1]+phantom{n}.center(2) ];
   mesh.z = [mesh.z phantom{n}.radius(3)*[-1 1]+phantom{n}.center(3) ];

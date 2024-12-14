@@ -2,6 +2,9 @@
 % infinitesimal dipole example
 %
 
+addpath('~/opt/openEMS/share/openEMS/matlab');
+addpath('~/opt/openEMS/share/CSXCAD/matlab');
+
 close all
 clear
 clc
@@ -35,6 +38,11 @@ mesh.z = -dipole_length*10:dipole_length/2:dipole_length*10;
 % excitation
 ex_vector = [0 0 0];
 ex_vector(dipole_orientation) = 1;
+%{
+Dipole length is the excitation wavelength/50
+The whole range between f_max -> 2 x f_max is excited in a guassian pulse.
+- 
+%}
 start = ex_vector * -dipole_length/2;
 stop  = ex_vector *  dipole_length/2;
 CSX = AddExcitation( CSX, 'infDipole', 1, ex_vector );
