@@ -76,8 +76,8 @@ air_dy = 400
 air_dz = 200
 
 ## MATERIAL - PEC
-materialList['copper'] = CSX.AddMaterial( 'copper' )
-materialList['copper'].SetMaterialProperty(epsilon=1.0, mue=1.0, kappa=56e6)
+materialList['copper'] = CSX.AddMetal#AddMaterial( 'copper' )
+# materialList['copper'].SetMaterialProperty(epsilon=1.0, mue=1.0, kappa=56e6)
 MSL_dx = 600 # 600 mm
 MSL_dy = 50 # 50 mm
 MSL_dz = 1  # 10 mm
