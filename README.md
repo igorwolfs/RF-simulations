@@ -16,7 +16,7 @@ OpenEMS field simulations in Paraview
 - https://www.youtube.com/watch?v=XfZS62qvCN4
 
 ### Nice add-ons
-A repository containing a new grid mesh creation algorithm for openEMS:
+A repository containing new grid mesh creation algorithm for openEMS:
 - https://github.com/SiliconLabs/hardware_design_examples/tree/AntennaSimulationWorkbench/examples
 Converts HyperLynx to matlab for electromagnetic simulation or PDF for printing.
 - https://github.com/koendv/hyp2mat
