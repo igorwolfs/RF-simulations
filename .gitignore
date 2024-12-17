@@ -9,3 +9,4 @@ octave_tutorials/tmp_mod/*
 **/.vscode
 *.xml
 *.vtp
+**/__pycache__
