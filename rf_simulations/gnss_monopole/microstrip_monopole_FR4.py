@@ -106,10 +106,9 @@ L4_cu_dz = 0.035e-3
 #######################################################################################################################################
 materialList = {}
 
-
 ## SUBSTRATE
 substrate_epsR = (L1_prepreg_epsr+Core_epsr) / 2
-substrate_epsR_eff = (substrate_epsR*0.1 + 1*0.8)
+substrate_epsR_eff = (substrate_epsR*0.05 + 1*0.95)
 ## ANTENNA
 f_antenna = 1500e6 #! GPS L1 freq (MHz)
 lambda_antenna = C0 / (f_antenna * sqrt(substrate_epsR_eff))
@@ -139,7 +138,7 @@ WARNING: the ground plane for a microstrip patch antenna can also be too large.
 '''
 
 # size of the simulation box
-SimBox = np.array([150, 150, 75])
+SimBox = np.array([dx_subs*2, dy_subs*2, dx_subs*2])
 
 wavelength_min = (C0/(f0+fc))
 wavelength_min_u = wavelength_min / unit
