@@ -1,8 +1,9 @@
 """
 Goal: 
-- Simulate a simple 3D monopole antenna
-- The frequency of the antenna should be about 1.5 GHz (L1-GPS band)
-Check the radiation pattern, and compare with the planar example.
+- Simulate a planar monopole antenna, with FR4.
+- The frequency of the antenna should be about 1.5 GHz (L1, L2, L5-GPS band)
+
+NOTE: make sure to remove the ground planes from below the antenna and ground planes, and add the additional thickness of FR4.
 """
 
 import argparse
@@ -26,7 +27,7 @@ sim_enabled = True
 
 ### CONSTANTS
 from openEMS.physical_constants import *
-unit = 1e-3 # specify everything in mm
+unit = 1e-3 # specify everything in um
 
 ## SIMULATION FOLDER SETUP
 file_name = Path(__file__).parts[-1].strip(".py")
@@ -53,7 +54,6 @@ end_criteria = 1e-4
 FDTD = openEMS(NrTS=max_timesteps, EndCriteria=end_criteria)
 FDTD.SetCSX(CSX)
 
-
 #######################################################################################################################################
 # BOUNDARY CONDITIONS
 #######################################################################################################################################
@@ -78,18 +78,28 @@ mesh.z = np.array([])
 #######################################################################################################################################
 # EXCITATION Gaussian
 #######################################################################################################################################
-# setup FDTD parameter & excitation function
-# f0 = 1.5e9 # center frequency
-# fc = 500e6 # 20 dB corner frequency
-
 '''
 #! WARNING: having the right 
 '''
 f0 = 2e9 # center frequency
 fc = 1e9 # 20 dB corner frequency
 
-FDTD.SetGaussExcite( f0, fc )
+FDTD.SetGaussExcite(f0, fc)
 
+#######################################################################################################################################
+# STACKUP
+#######################################################################################################################################
+
+L1_cu_dz = 0.035e-3
+L1_prepreg_dz = 0.2104e-3
+L1_prepreg_epsr = 4.4
+L2_cu_dz = 0.0152e-3
+Core_dz = 1.065e-3
+Core_epsr = 4.6
+L3_cu_dz = 0.0152e-3
+L3_prepreg_dz = 0.2104e-3
+L3_prepreg_epsr = 4.4
+L4_cu_dz = 0.035e-3
 
 #######################################################################################################################################
 # MATERIALS
@@ -98,31 +108,38 @@ materialList = {}
 
 
 ## SUBSTRATE
-substrate_epsR = 1
-
+substrate_epsR = (L1_prepreg_epsr+Core_epsr) / 2
+substrate_epsR_eff = (substrate_epsR*0.1 + 1*0.8)
 ## ANTENNA
 f_antenna = 1500e6 #! GPS L1 freq (MHz)
-lambda_antenna = C0 / (f_antenna * sqrt(substrate_epsR))
+lambda_antenna = C0 / (f_antenna * sqrt(substrate_epsR_eff))
 lambda_antenna_u = lambda_antenna / unit
 
 materialList['monopole'] = CSX.AddMetal( 'monopole' ) # create a perfect electric conductor (PEC)
 monopole_length = (lambda_antenna_u) / 4  # quarter wavelength
-dx_mon = monopole_length / 40
+dx_mon = monopole_length
 dy_mon = monopole_length / 40
-dz_mon = monopole_length
+dz_mon = 0
 
 ## CREATE GROUND PLANE
 materialList['gnd'] = CSX.AddMetal('gnd') # create a perfect electric conductor (PEC)
-dx_gnd = monopole_length
-dy_gnd = monopole_length
+dx_gnd = monopole_length/3
+dy_gnd = monopole_length/2
 dz_gnd = 0
+
+# SUBSTRATE
+# substrate_kappa  = 1e-3 * 2 * pi * 2.45e9 * EPS0 * substrate_epsR
+materialList['substrate'] = CSX.AddMaterial('substrate', epsilon=substrate_epsR)# , kappa=substrate_kappa)
+dx_subs = dx_mon + dx_gnd
+dy_subs = dy_gnd
+dz_subs = (L1_prepreg_dz+Core_dz+L3_prepreg_dz+L2_cu_dz*4) / unit
 
 '''
 WARNING: the ground plane for a microstrip patch antenna can also be too large.
 '''
 
 # size of the simulation box
-SimBox = np.array([150, 150, 150])
+SimBox = np.array([150, 150, 75])
 
 wavelength_min = (C0/(f0+fc))
 wavelength_min_u = wavelength_min / unit
@@ -137,27 +154,40 @@ mesh.z = np.concatenate((mesh.z, np.array([-SimBox[2]/2, SimBox[2]/2])))
 #######################################################################################################################################
 # Geometry and Grid
 #######################################################################################################################################
-# * ANTENNA
+
+##! DEFINING BOXES
+start_patch = []
+stop_patch = []
+
+# * CREATE PATCH
 # upper patch
-start_mon = [-dx_mon/2, -dy_mon/2, 0]
-stop_mon = [dx_mon/2, dy_mon/2, dz_mon]
+start_mon = [0, -dy_mon/2, dz_subs]
+stop_mon = [dx_mon, dy_mon/2, dz_subs+dz_mon]
 materialList['monopole'].AddBox(priority=10, start=start_mon, stop=stop_mon) # add a box-primitive to the metal property 'patch'
 # materialList['mslfeed'].AddBox(priority=10, start=start_mslfeed, stop=stop_mslfeed) # add a box-primitive to the metal property 'patch'
 
 # * GROUND
-start_ground = [-dx_gnd/2, -dy_gnd/2, 0]
-stop_ground = [dx_gnd/2, dy_gnd/2, 0]
+start_ground = [-dx_gnd, -dy_gnd/2, dz_subs + dz_gnd]
+stop_ground = [0, dy_gnd/2, dz_subs + dz_gnd]
 materialList['gnd'].AddBox( priority=0, start=start_ground, stop=stop_ground)
+
+
+# * SUBSTRATE
+start_subs = [-dx_gnd, -dy_subs/2, 0]
+stop_subs  = [-dx_gnd+dx_subs, dy_subs/2, dz_subs]
+materialList['substrate'].AddBox( priority=0, start=start_subs, stop=stop_subs)
 
 # apply the excitation & resist as a current source
 # feed_dx = -patch_dx/2 # feeding position in x-direction (assume feeding at the edge)
-feed_R = 30 # feed resistance
-start_port = [-dx_mon/2, -dy_mon/2, 0]
-stop_port  = [dx_mon/2, dy_mon/2, dz_mon/20]
-port = FDTD.AddLumpedPort(1, feed_R, start_port, stop_port, 'z', 1.0, priority=5) #, edges2grid='xy')
+feed_R = 50 # feed resistance
+
+start_port = [0, -dy_mon/2, dz_subs]
+stop_port  = [dx_mon/20, dy_mon/2, dz_subs]
+port = FDTD.AddLumpedPort(1, feed_R, start_port, stop_port, 'x', 1.0, priority=5) #, edges2grid='xy')
 
 print(f"monopole: {start_mon} {stop_mon}")
 print(f"ground: {start_ground} {stop_ground}")
+print(f"subs: {start_subs} {stop_subs}")
 print(f"port: {start_port} {stop_port}")
 
 ##! DEFINING GRID
@@ -169,12 +199,13 @@ third_array = np.array([-1/3, 2/3]) * start_mon[1]/2
 # We probably don't need these thanks to out existing patch meshing
 mesh.x = np.concatenate((mesh.x, np.array([start_mon[0], stop_mon[0]]), start_mon[0] - third_array, stop_mon[0] + third_array))
 mesh.y = np.concatenate((mesh.y, np.array([start_mon[1], stop_mon[1]]), start_mon[1] - third_array, stop_mon[1] + third_array))
-mesh.z = np.concatenate((mesh.z, np.array([start_mon[2], stop_mon[2]]), start_mon[2] - third_array, stop_mon[2] + third_array))
 
 # Add extra cells from lumped port
 mesh.x = np.concatenate((mesh.x, np.array([start_port[0]]), start_port[0] + third_array))
 mesh.y = np.concatenate((mesh.y, np.array([start_port[1]]), start_port[1] + third_array))
-mesh.z = np.concatenate((mesh.z, np.array([start_port[2], stop_port[2]]), start_port[2] - third_array, stop_port[2] + third_array))
+
+# add extra cells to discretize the substrate thickness
+mesh.z = np.concatenate((mesh.z, linspace(0, dz_subs, 5)))
 
 # Add extra cells for ground
 mesh.x = np.concatenate((mesh.x, np.array([start_ground[0], stop_ground[0]]) + third_array, np.array([start_ground[0], stop_ground[0]])-third_array))
@@ -211,25 +242,12 @@ nf2ff = FDTD.CreateNF2FFBox()
 
 dump_boxes = {}
 ## define dump boxes
-field1_start = [mesh.x[0], mesh.y[0], 0]
-field1_stop  = [mesh.x[-1], mesh.y[-1], 0]
-
-dump_boxes['et1'] = CSX.AddDump( 'Et1_', dump_mode=2 ) # cell interpolated
-dump_boxes['et1'].AddBox(field1_start, field1_stop, priority=0 )
-
-dump_boxes['ht1'] = CSX.AddDump(  'Ht1_', dump_type=1, dump_mode=2 ) # cell interpolated
-dump_boxes['ht1'].AddBox(field1_start, field1_stop, priority=0 )
-
-
-## define dump boxes
-field2_start = [start_mon[0], mesh.y[0], mesh.z[0]]
-field2_stop  = [start_mon[0], mesh.y[-1], mesh.z[-1]]
-
-dump_boxes['et2'] = CSX.AddDump( 'Et2_', dump_mode=2 ) # cell interpolated
-dump_boxes['et2'].AddBox(field2_start, field2_stop, priority=0 )
-
-dump_boxes['ht2'] = CSX.AddDump(  'Ht2_', dump_type=1, dump_mode=2 ) # cell interpolated
-dump_boxes['ht2'].AddBox(field2_start, field2_stop, priority=0 )
+et_start = [mesh.x[0], mesh.y[0], dz_subs]
+et_stop  = [mesh.x[-1], mesh.y[-1], dz_subs]
+dump_boxes['et'] = CSX.AddDump( 'Et_', dump_mode=2 ) # cell interpolated
+dump_boxes['et'].AddBox(et_start, et_stop, priority=0 )
+dump_boxes['ht'] = CSX.AddDump(  'Ht_', dump_type=1, dump_mode=2 ) # cell interpolated
+dump_boxes['ht'].AddBox(et_start, et_stop, priority=0 )
 
 #######################################################################################################################################
 # SIMULATION
