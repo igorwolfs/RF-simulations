@@ -14,6 +14,8 @@ Simply using rectangular edges.
 # Simulation
 ## Observing resonance
 If not observing resonance at (or around) the desired frequency (a.k.a. the imaginary )
+
+
 ## Antenna length
 Whenever using a dielectric, realize that part of your waves are contained within the dielectric, and another part is not.
 So in order to determine the correct resonance length you should take some kind of weighted average between 
@@ -38,6 +40,13 @@ Stackup is the following:
 
 To get the required epsilon we need to take 0.1 times the dielectric permittivity + 0.9 times the permittivity of air
 
+### LoRaWan vs GNSS antenna
+It seems that when using the LoRaWan frequency (a.k.a. 868 MHz), we get a value for the impedance, S-parameter and radiation patter that is completely off from what we want.
+
+GUESS:
+The antenna length itself needs to be too long for it to resonate at that frequency. With this it can't resonate against the actual ground plane anymore because it's too far away.
+
+Check the folder "straight_monopole_868"
 # Resources:
 How to meander antennas + why there are meandered this way:
 - https://www.qsl.net/kk4obi/Meander%20Dipole.html
