@@ -64,7 +64,7 @@ OR
     - This is probabably a better option, it might introduce some impedance matching issues though.
 
 
-### Mistake in the drawing
+### Antenna version 1: Mistake in the drawing
 - There is a mistake in the drawing, the inner vertical line is supposed to be
     - 38 mm
     - The upper line: 2 mm
@@ -72,6 +72,10 @@ OR
     - The lower gap: 1 mm
     So the total length here shuold be: 45 mm, the indication says "43 mm" however.
     Assume that the length is 43, and deduce everything from that.
+
+### Antenna version 2: Dimensions off
+It seems that the dimensions of the antennas are about lambda / 2, not lambda / 4. Since it's a monopole antenna the dimensions seem to be a bit weird.
+However: it does seem like resonance occurs at the peaks described. The return loss however is not as good as described, which leads me to move to a different, more simple antenna-type to start with.
 
 # FreeCad
 ### Issue when sketching
