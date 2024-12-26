@@ -67,6 +67,7 @@ if sim_enabled:
 
 ### FDTD setup
 CSX = ContinuousStructure()
+
 '''
 #! WARNING: 
 - Using the right excitation frequency range is very important here.

@@ -81,6 +81,7 @@ res_u = wavelength_u / 20
 materialList = {}
 
 ## ANTENNA
+#! 80 mm per edge
 f_antenna = 868e6 #! LORAWAN freq (MHz)
 lambda_antenna = C0 / (f_antenna)
 lambda_antenna_u = lambda_antenna / unit
