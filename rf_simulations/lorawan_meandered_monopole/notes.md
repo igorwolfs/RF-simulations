@@ -1,4 +1,5 @@
-# Lorawan
-Since we tried multiple times to design antennas based on papers, it seems that sometimes the papers are not as good as expected.
+# Goal
+The goal here is to simulate the basic TI lorawan-antenna example, so that it fits on the board, and do the appropriate 50 ohm impedance matching for it.
 
-## 
+# Todo
+- Link top and bottom layer here together.

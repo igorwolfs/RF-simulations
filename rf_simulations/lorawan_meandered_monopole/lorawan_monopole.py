@@ -280,7 +280,6 @@ legend()
 ylabel('Zin (Ohm)')
 xlabel('Frequency (GHz)')
 plt.savefig(os.path.join(Plot_Path, 'impedance.pdf'))
-
 show()
 
 # Check if the reflection drops extremely low somewhere
