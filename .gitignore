@@ -1,11 +1,13 @@
 octave_tutorials/tmp/*
 octave_tutorials/tmp_mod/*
 *.zip
-*.stl
-*.vtr
+**/*.vtk
+**/*.vtr
+**/*.vtp
 **/et
 **/ht
-*.h5
+**/
+**/*.h5
 **/.vscode
 *.xml
 *.vtp

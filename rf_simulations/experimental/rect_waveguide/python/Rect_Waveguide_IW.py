@@ -282,9 +282,12 @@ source: Microwave engineering, 4th edition, page 96-102
 '''
 ### Probes in waveguides for current
 The probe gets an H-field function passed to it, depending on what it needs to measure.
-For current measurement amperes law states that the line integral of the magnetic field over the edge of the conductor is equal to the current contained inside the intergral.
+For current measurement amperes law states that the line integral of the magnetic field over the edge of the conductor 
+is equal to the current contained inside the intergral.
+
 ### Probes in waveguides for electric fields
-The probe gets an E field function passed to it, so because the electric field within that element of the conductor surface is uniform.
+The probe gets an E field function passed to it, so 
+because the electric field within that element of the conductor surface is uniform.
 The potential difference over 2 points is the line integral over the electric field from that point to the next.
 '''
 

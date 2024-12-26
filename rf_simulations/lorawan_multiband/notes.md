@@ -2,6 +2,7 @@
 We will try to recreate this lorawan multi-band antenna and perform some practical tests with it to verify the results from the paper.
 
 ## Stackup
+Our stackup:
 - L1: CU: 0.035 mm
 - prepreg: 0.2104 mm prepreg
 - L2: 0.0152 mm copper
@@ -9,7 +10,16 @@ We will try to recreate this lorawan multi-band antenna and perform some practic
 - L3: 0.0152 mm copper
 - Prepreg: 7628, RC 49 %, 0.2104 mm
 - L4: CU: 0.035 mm
+So:
+- height: 1.4858 mm
 
+
+The FR4 used for prototyping was:
+- length: 80 mm
+- width: 50 mm
+- height: 1.6 mm
+
+### How was the stackup in the paper?
 
 ## Simulation
 Steps
@@ -62,3 +72,7 @@ OR
     - The lower gap: 1 mm
     So the total length here shuold be: 45 mm, the indication says "43 mm" however.
     Assume that the length is 43, and deduce everything from that.
+
+# FreeCad
+### Issue when sketching
+Make sure to when sketching don't create overlapping figures e.g.: overlapping squares when drawing an rectangular angle.

@@ -182,12 +182,6 @@ mesh.z = np.concatenate((mesh.z, start_ifa_feed[2]-third_mesh, stop_ifa_feed[2]+
 #######################################################################################################################################
 ports = {}
 
-'''
-WARNING: 
--> in this case, if we don't choose our mesh size small enough, the voltage probe doesn't even get to a 1D integral, and errors ensue.
--> SO: probe errors can be a consequence of (like most erros in FDTD) incorrect meshing
-
-'''
 feed_R = 50
 portin_prio = 5
 portin_start = np.array([0, 0, 0]) + tl
