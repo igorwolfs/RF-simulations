@@ -6,7 +6,6 @@ octave_tutorials/tmp_mod/*
 **/*.vtp
 **/et
 **/ht
-**/
 **/*.h5
 **/.vscode
 *.xml
