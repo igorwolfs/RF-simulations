@@ -81,8 +81,8 @@ mesh.z = np.array([])
 #######################################################################################################################################
 
 # setup FDTD parameter & excitation function
-f0 = 0.9e9 # center frequency
-fc = 0.5e9 # 20 dB corner frequency
+f0 = 868e6 # center frequency
+fc = 100e6 # 20 dB corner frequency
 
 
 FDTD.SetGaussExcite( f0, fc )
