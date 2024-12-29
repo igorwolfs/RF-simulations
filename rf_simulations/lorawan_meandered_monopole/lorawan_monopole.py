@@ -51,7 +51,7 @@ model_files = [file_ for file_ in model_files if file_.endswith('.stl')]
 CSX = ContinuousStructure()
 ## * Limit the simulation to 30k timesteps
 ## * Define a reduced end criteria of -40dB
-max_timesteps = 540000*3
+max_timesteps = 540000 * 4 * 4
 end_criteria = 1e-4
 FDTD = openEMS(NrTS=max_timesteps, EndCriteria=end_criteria)
 FDTD.SetCSX(CSX)
@@ -99,11 +99,14 @@ materialList = {}
 
 ## FR4
 substrate_epsR   = 3.38
-substrate_kappa  = 1e-3 * 2*pi*2.45e9 * EPS0*substrate_epsR
+substrate_kappa  = 1e-3 * 2*pi*2.45e9 * EPS0 * substrate_epsR
 materialList['FR4'] = CSX.AddMaterial( 'FR4', epsilon=substrate_epsR)#, kappa=substrate_kappa)
 
 ## ANTENNA
 materialList['monopole'] = CSX.AddMetal('monopole')
+
+## GND
+materialList['gnd'] = CSX.AddMetal('gnd')
 
 ## AIR
 materialList['air'] = CSX.AddMaterial('air')
@@ -121,6 +124,11 @@ polyhedrons = {}
 mifa_filepath = os.path.join(stl_path, "monopole.stl")
 polyhedrons['monopole']  = materialList['monopole'].AddPolyhedronReader(mifa_filepath,  priority=5)
 assert(polyhedrons['monopole'] .ReadFile(), f"Found file")
+
+## GND
+gnd_filepath = os.path.join(stl_path, "gnd.stl")
+polyhedrons['gnd'] = materialList['gnd'].AddPolyhedronReader(gnd_filepath, priority=3)
+assert(polyhedrons['gnd'].ReadFile(), f"Found file")
 
 
 ## SUBSTRATE
@@ -144,7 +152,7 @@ Make sure the mesh is 1/rd inside, and 2/3rds outside the PEC boundary
 from mesher import find_poly_min_max, add_poly_mesh_pec, add_poly_mesh_boundary, add_poly_mesh_substrate, find_mins_maxs, add_port_mesh
 
 ## AIR
-mesh_lists_air = add_poly_mesh_boundary(polyhedrons['air'])
+mesh_lists_air = add_poly_mesh_boundary(polyhedrons['air'], wavelength_u)
 mesh.x = np.concatenate((mesh.x, mesh_lists_air[0]))
 mesh.y = np.concatenate((mesh.y, mesh_lists_air[1]))
 mesh.z = np.concatenate((mesh.z, mesh_lists_air[2]))
@@ -166,6 +174,14 @@ mesh.y = np.concatenate((mesh.y, mesh_lists_monopole[1]))
 mesh.z = np.concatenate((mesh.z, mesh_lists_monopole[2]))
 print(f"monopole MESH LIST: \n- {[sorted(lst) for lst in mesh_lists_monopole]}")
 find_poly_min_max(polyhedrons['monopole'])
+
+## GROUND
+mesh_lists_gnd = add_poly_mesh_pec(polyhedrons['gnd'], 1/3, unit=1e-3)
+mesh.x = np.concatenate((mesh.x, mesh_lists_monopole[0]))
+mesh.y = np.concatenate((mesh.y, mesh_lists_monopole[1]))
+mesh.z = np.concatenate((mesh.z, mesh_lists_monopole[2]))
+print(f"monopole gnd: \n- {[sorted(lst) for lst in mesh_lists_gnd]}")
+find_poly_min_max(polyhedrons['gnd'])
 
 #######################################################################################################################################
 # PROBES
