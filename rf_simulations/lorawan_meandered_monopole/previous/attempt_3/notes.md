@@ -36,7 +36,7 @@ What's visible:
     - 15 mm feed length
 - Second feed:
     - 0.7 mm width
-    - 1.6 mm isolation 
+    - 1.6 mm isolation
     - 5 mm length
 
 Rule is to always place the microstrip about 1.5 times the substrate height h away from the top ground plane.

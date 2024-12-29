@@ -82,7 +82,7 @@ mesh.z = np.array([])
 
 # setup FDTD parameter & excitation function
 f0 = 868e6 # center frequency
-fc = 100e6 # 20 dB corner frequency
+fc = 300e6 # 20 dB corner frequency
 
 
 FDTD.SetGaussExcite( f0, fc )
@@ -168,7 +168,7 @@ print(f"FR4 MESH LIST: \n- {[sorted(lst) for lst in mesh_lists_fr4]}")
 find_poly_min_max(polyhedrons['FR4'])
 
 ## ANTENNA
-mesh_lists_monopole = add_poly_mesh_pec(polyhedrons['monopole'], 1/3, unit=1e-3)
+mesh_lists_monopole = add_poly_mesh_pec(polyhedrons['monopole'], wavelength_u, 1/3, unit=1e-3)
 mesh.x = np.concatenate((mesh.x, mesh_lists_monopole[0]))
 mesh.y = np.concatenate((mesh.y, mesh_lists_monopole[1]))
 mesh.z = np.concatenate((mesh.z, mesh_lists_monopole[2]))
@@ -176,7 +176,7 @@ print(f"monopole MESH LIST: \n- {[sorted(lst) for lst in mesh_lists_monopole]}")
 find_poly_min_max(polyhedrons['monopole'])
 
 ## GROUND
-mesh_lists_gnd = add_poly_mesh_pec(polyhedrons['gnd'], 1/3, unit=1e-3)
+mesh_lists_gnd = add_poly_mesh_pec(polyhedrons['gnd'], wavelength_u, 1/3, unit=1e-3)
 mesh.x = np.concatenate((mesh.x, mesh_lists_monopole[0]))
 mesh.y = np.concatenate((mesh.y, mesh_lists_monopole[1]))
 mesh.z = np.concatenate((mesh.z, mesh_lists_monopole[2]))
@@ -194,7 +194,7 @@ WARNING:
 -> SO: probe errors can be a consequence of (like most erros in FDTD) incorrect meshing
 
 '''
-feed_R = 50
+feed_R = 2500
 from CSXCAD.CSPrimitives import CSPrimPolyhedron, CSPrimPolyhedronReader
 ## Lumped Port
 import stl
@@ -215,9 +215,9 @@ print("mesh.x: {mesh.x}\r\n", sorted(mesh.x))
 print("mesh.y: {mesh.y}\r\n", sorted(mesh.y))
 print("mesh.z: {mesh.z}\r\n", sorted(mesh.z))
 
-mesh.x = SmoothMeshLines(mesh.x, res_u, ratio=1.4)
-mesh.y = SmoothMeshLines(mesh.y, res_u, ratio=1.4)
-mesh.z = SmoothMeshLines(mesh.z, res_u, ratio=1.4)
+mesh.x = SmoothMeshLines(mesh.x, res_u, ratio=1.1)
+mesh.y = SmoothMeshLines(mesh.y, res_u, ratio=1.1)
+mesh.z = SmoothMeshLines(mesh.z, res_u, ratio=1.1)
 
 print("mesh.x: {mesh.x}\r\n", mesh.x)
 print("mesh.y: {mesh.y}\r\n", mesh.y)
