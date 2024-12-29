@@ -63,10 +63,21 @@ def add_poly_mesh_pec(polyhedron, factor=1/3, tol=np.array([0.1, 0.1, 0.01]), un
     return mesh_lists
 
 
-def add_poly_mesh_boundary(polyhedron, factor=1/3, unit=0.2):
+def add_poly_mesh_boundary(polyhedron, wavelength, factor=1/40, unit=0.2):
     assert polyhedron.GetNumVertices() > 0, "ERROR: add_mesh didn't find vertices"
     bbox = polyhedron.GetBoundBox()
-    return [np.array([bbox[0][0], bbox[1][0]]), np.array([bbox[0][1], bbox[1][1]]), np.array([bbox[0][2], bbox[1][2]])]
+
+    # Make sure the wavelength / 20 is within the simulated domain
+    mesh_list_ret = []
+    for i in range(3):
+        if ((wavelength * factor) > bbox[1][i] - bbox[0][i]):
+            print(f"ERROR: {i}th dimension is smaller than lambda*{factor}")
+            mesh_list_ret.append([bbox[0][i], bbox[1][i]])
+        else:
+            i_list_0 = np.array([bbox[0][i], bbox[0][i] + wavelength * factor])
+            i_list_1 = np.array([bbox[1][i], bbox[1][i] - wavelength * factor])
+            mesh_list_ret.append(np.concatenate((i_list_0, i_list_1)))
+    return mesh_list_ret
 
 
 def add_poly_mesh_substrate(polyhedron, factor=1/3, unit=[1.0, 1.0, 0.1], interval=[2, 2, 0.5]):
