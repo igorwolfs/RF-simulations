@@ -9,7 +9,7 @@ from openEMS.physical_constants import *
 @description: takes out duplicate (or close duplicates) based on passed tolerance.
 @return: Returns a 3 sub-lists, 1 for each sub-coordinate
 '''
-def add_poly_mesh_pec(polyhedron, factor=1/3, tol=np.array([0.1, 0.1, 0.01]), unit=1e-3):
+def add_poly_mesh_pec(polyhedron, wavelength, factor=1/3, tol= np.array([0.1, 0.1, 0.01]), unit=1e-3):
     assert polyhedron.GetNumVertices() > 0, "ERROR: add_mesh didn't find vertices"
     bbox = polyhedron.GetBoundBox()
     coords = [[], [], []]
@@ -56,6 +56,10 @@ def add_poly_mesh_pec(polyhedron, factor=1/3, tol=np.array([0.1, 0.1, 0.01]), un
                 dist = np.abs(coords[c_i][len(coords[c_i])-1]-coords[c_i][len(coords[c_i])-2])
             else:
                 dist = min(np.abs(coords[c_i][i] - coords[c_i][i-1]), np.abs(coords[c_i][i] - coords[c_i][i+1]))
+            
+            # Check if the mesh is closer than the minimum "delta"
+            dist = min(dist, wavelength/40)
+
             # Get in and outside mesh
             numpy_mesh = np.array(coords[c_i][i]) + np.array([factor, -factor]) * dist
             mesh_lists[c_i].append(numpy_mesh)
