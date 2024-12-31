@@ -43,7 +43,7 @@ if sim_enabled:
 		os.mkdir(Sim_Path)
 
 ## Get models
-stl_path = os.path.join(currDir, "freecad")
+stl_path = os.path.join(currDir, "freecad_monopole_modified")
 model_files = os.listdir(stl_path)
 model_files = [file_ for file_ in model_files if file_.endswith('.stl')]
 
@@ -51,7 +51,7 @@ model_files = [file_ for file_ in model_files if file_.endswith('.stl')]
 CSX = ContinuousStructure()
 ## * Limit the simulation to 30k timesteps
 ## * Define a reduced end criteria of -40dB
-max_timesteps = 540000 * 4 * 4
+max_timesteps = 540000 * 4
 end_criteria = 1e-4
 FDTD = openEMS(NrTS=max_timesteps, EndCriteria=end_criteria)
 FDTD.SetCSX(CSX)
@@ -62,7 +62,7 @@ FDTD.SetCSX(CSX)
 FDTD.SetBoundaryCond( ['MUR', 'MUR', 'MUR', 'MUR', 'MUR', 'MUR'] )
 
 
-#######################################################################################################################################
+###################################F####################################################################################################
 # COORDINATE SYSTEM
 #######################################################################################################################################
 def mesh():
@@ -194,7 +194,7 @@ WARNING:
 -> SO: probe errors can be a consequence of (like most erros in FDTD) incorrect meshing
 
 '''
-feed_R = 2500
+feed_R = 50
 from CSXCAD.CSPrimitives import CSPrimPolyhedron, CSPrimPolyhedronReader
 ## Lumped Port
 import stl
@@ -297,6 +297,15 @@ ylabel('Zin (Ohm)')
 xlabel('Frequency (GHz)')
 plt.savefig(os.path.join(Plot_Path, 'impedance.pdf'))
 show()
+
+### SAVE IMPEDANCE
+import csv
+csv_path = os.path.join(Plot_Path, 'impedance.csv')
+with open(csv_path, 'w', newline='') as csvfile:
+    z_writer = csv.writer(csvfile, delimiter=' ', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    for idx, row in enumerate(Zin):
+        z_writer.writerow([freq[idx], np.real(row), np.imag(row)])
+
 
 # Check if the reflection drops extremely low somewhere
 idx = np.where((s11_dB<-10) & (s11_dB==np.min(s11_dB)))[0]
