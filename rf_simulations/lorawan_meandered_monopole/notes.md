@@ -62,4 +62,14 @@ note that for some annoying reason the length2 can't be 0, so we need to use a v
 2. Open the Draft-tool
 3. The "Position" needs to be set to the position where the x, y and z repetition needs to be started from. E.g.: the left/right upper/down most-position.
 4. The x/y/z-interval x/y/z needs to be set to the distance between each repetition
+5. Use the copy and rotate tool to make multiple copies of the same via-structure and rotate if necessary
+6. Make sure to add all of these together inside a single "part"-container
+7. Export as STL.
 
+
+# Gridding issue
+Issue: the gridding function is written to ignore closely placed grid elements.
+
+The problem now is that instead of adding part of the vias to the grid, it just sees all the via elements as being placed "too close together", and therefor doesn't add any gridpoints at all.
+
+It seems to get complicated to get an accurate mesh drawn using freecad. Another option is to draw a mesh manually and export it as an stl-file, import it into freecad and simulate according to that mesh.

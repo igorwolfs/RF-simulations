@@ -51,7 +51,7 @@ model_files = [file_ for file_ in model_files if file_.endswith('.stl')]
 CSX = ContinuousStructure()
 ## * Limit the simulation to 30k timesteps
 ## * Define a reduced end criteria of -40dB
-max_timesteps = 540000 * 4*4
+max_timesteps = 540000 * 4 * 4 * 3
 end_criteria = 1e-4
 FDTD = openEMS(NrTS=max_timesteps, EndCriteria=end_criteria)
 FDTD.SetCSX(CSX)
@@ -176,10 +176,10 @@ print(f"monopole MESH LIST: \n- {[sorted(lst) for lst in mesh_lists_monopole]}")
 find_poly_min_max(polyhedrons['monopole'])
 
 ## GROUND
-mesh_lists_gnd = add_poly_mesh_pec(polyhedrons['gnd'], wavelength_u, 1/3, unit=1e-3)
-mesh.x = np.concatenate((mesh.x, mesh_lists_monopole[0]))
-mesh.y = np.concatenate((mesh.y, mesh_lists_monopole[1]))
-mesh.z = np.concatenate((mesh.z, mesh_lists_monopole[2]))
+mesh_lists_gnd = add_poly_mesh_pec(polyhedrons['gnd'], wavelength_u, 1/3, tol=[1.0, 1.0, 1],  unit=1e-3)
+mesh.x = np.concatenate((mesh.x, mesh_lists_gnd[0]))
+mesh.y = np.concatenate((mesh.y, mesh_lists_gnd[1]))
+mesh.z = np.concatenate((mesh.z, mesh_lists_gnd[2]))
 print(f"monopole gnd: \n- {[sorted(lst) for lst in mesh_lists_gnd]}")
 find_poly_min_max(polyhedrons['gnd'])
 
