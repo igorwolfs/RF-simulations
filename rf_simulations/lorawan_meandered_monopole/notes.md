@@ -72,4 +72,10 @@ Issue: the gridding function is written to ignore closely placed grid elements.
 
 The problem now is that instead of adding part of the vias to the grid, it just sees all the via elements as being placed "too close together", and therefor doesn't add any gridpoints at all.
 
-It seems to get complicated to get an accurate mesh drawn using freecad. Another option is to draw a mesh manually and export it as an stl-file, import it into freecad and simulate according to that mesh.
+It seems to get complicated to get an accurate mesh drawn using freecad. Another option is to draw a mesh manually and export it in the python console, import it into freecad and simulate according to that mesh.
+
+## Issues with gridding
+I believe the grid created in FreeCad is apparently too narrow, since only the second resonance frequency (around 960 MHz) is recorded. I need to make sure to make this grid narrow enough before starting to simulate.
+
+## Freecad colour selection
+- Select copper-Generic for all copper planes and traces

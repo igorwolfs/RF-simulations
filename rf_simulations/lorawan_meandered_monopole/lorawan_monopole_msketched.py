@@ -51,7 +51,7 @@ model_files = [file_ for file_ in model_files if file_.endswith('.stl')]
 CSX = ContinuousStructure()
 ## * Limit the simulation to 30k timesteps
 ## * Define a reduced end criteria of -40dB
-max_timesteps = 540000 * 4 * 4 * 3
+max_timesteps = 39765 * 3
 end_criteria = 1e-4
 FDTD = openEMS(NrTS=max_timesteps, EndCriteria=end_criteria)
 FDTD.SetCSX(CSX)
@@ -149,50 +149,14 @@ from CSXCAD.SmoothMeshLines import SmoothMeshLines
 '''
 Make sure the mesh is 1/rd inside, and 2/3rds outside the PEC boundary
 '''
-from mesher import find_poly_min_max, add_poly_mesh_pec, add_poly_mesh_boundary, add_poly_mesh_substrate, find_mins_maxs, add_port_mesh
-
-
-## AIR
-mesh_lists_air = add_poly_mesh_boundary(polyhedrons['air'], wavelength_u)
-mesh.x = np.concatenate((mesh.x, mesh_lists_air[0]))
-mesh.y = np.concatenate((mesh.y, mesh_lists_air[1]))
-mesh.z = np.concatenate((mesh.z, mesh_lists_air[2]))
-print(f"AIR MESH LIST: \n- {[sorted(lst) for lst in mesh_lists_air]}")
-find_poly_min_max(polyhedrons['air'])
-
-
-## SUBSTRATE
-mesh_lists_fr4 = add_poly_mesh_substrate(polyhedrons['FR4'], 1/3)
-mesh.x = np.concatenate((mesh.x, mesh_lists_fr4[0]))
-mesh.y = np.concatenate((mesh.y, mesh_lists_fr4[1]))
-mesh.z = np.concatenate((mesh.z, mesh_lists_fr4[2]))
-print(f"FR4 MESH LIST: \n- {[sorted(lst) for lst in mesh_lists_fr4]}")
-find_poly_min_max(polyhedrons['FR4'])
-
-
-## ANTENNA
-mesh_lists_monopole = add_poly_mesh_pec(polyhedrons['monopole'], wavelength_u, 1/3, unit=1e-3)
-mesh.x = np.concatenate((mesh.x, mesh_lists_monopole[0]))
-mesh.y = np.concatenate((mesh.y, mesh_lists_monopole[1]))
-mesh.z = np.concatenate((mesh.z, mesh_lists_monopole[2]))
-print(f"monopole MESH LIST: \n- {[sorted(lst) for lst in mesh_lists_monopole]}")
-find_poly_min_max(polyhedrons['monopole'])
-
-
-## GROUND
-mesh_lists_gnd = add_poly_mesh_pec(polyhedrons['gnd'], wavelength_u, 1/3, tol=[0.01, 0.01, 0.1],  unit=1e-3)
-mesh.x = np.concatenate((mesh.x, mesh_lists_gnd[0]))
-mesh.y = np.concatenate((mesh.y, mesh_lists_gnd[1]))
-mesh.z = np.concatenate((mesh.z, mesh_lists_gnd[2]))
-print(f"monopole gnd: \n- {[sorted(lst) for lst in mesh_lists_gnd]}")
-find_poly_min_max(polyhedrons['gnd'])
+from mesher import find_poly_min_max, add_poly_mesh_boundary, add_poly_mesh_substrate, find_mins_maxs, add_port_mesh
 
 #######################################################################################################################################
 # PROBES
 #######################################################################################################################################
 ports = {}
 
-    '''
+'''
 WARNING: 
 -> in this case, if we don't choose our mesh size small enough, the voltage probe doesn't even get to a 1D integral, and errors ensue.
 -> SO: probe errors can be a consequence of (like most erros in FDTD) incorrect meshing
@@ -206,12 +170,14 @@ lumped_port_filepath = os.path.join(stl_path, "excitation.stl")
 lumped_port_mesh =  stl.mesh.Mesh.from_file(lumped_port_filepath)
 portin_start, portin_stop = find_mins_maxs(lumped_port_mesh)
 
-mesh_lists_portin = add_port_mesh(portin_start, portin_stop)
-mesh.x = np.concatenate((mesh.x, mesh_lists_portin[0]))
-mesh.y = np.concatenate((mesh.y, mesh_lists_portin[1]))
-mesh.z = np.concatenate((mesh.z, mesh_lists_portin[2]))
 
-print(f"PORTIN mesh_list: {mesh_lists_portin}")
+### FIND MESH
+mesh_0 = np.load(os.path.join(stl_path, "mesh_0.npy"))
+mesh.x = np.concatenate((mesh.x, mesh_0))
+mesh_1 = np.load(os.path.join(stl_path, "mesh_1.npy"))
+mesh.y = np.concatenate((mesh.y, mesh_1))
+mesh_2 = np.load(os.path.join(stl_path, "mesh_2.npy"))
+mesh.z = np.concatenate((mesh.z, mesh_2))
 
 
 print(f"resolution_U: {res_u}")
