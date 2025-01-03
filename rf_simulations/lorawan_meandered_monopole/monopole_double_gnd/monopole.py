@@ -9,9 +9,11 @@ from pathlib import Path, PurePath
 import os
 
 # Add path to python
-pythonpath = PurePath(Path(__file__).parents[2], 'python_libs')
+pythonpath = PurePath(Path(__file__).parents[3], 'python_libs')
 sys.path.append(os.path.abspath(pythonpath))
 
+if not (os.path.isdir(pythonpath)):
+      raise SystemError("Folder python_libs not found")
 
 ### Import Libraries
 from pylab import *
@@ -43,7 +45,7 @@ if sim_enabled:
 		os.mkdir(Sim_Path)
 
 ## Get models
-stl_path = os.path.join(currDir, "freecad_monopole_modified")
+stl_path = os.path.join(currDir, "freecad")
 model_files = os.listdir(stl_path)
 model_files = [file_ for file_ in model_files if file_.endswith('.stl')]
 
@@ -51,7 +53,7 @@ model_files = [file_ for file_ in model_files if file_.endswith('.stl')]
 CSX = ContinuousStructure()
 ## * Limit the simulation to 30k timesteps
 ## * Define a reduced end criteria of -40dB
-max_timesteps = 39765 * 3
+max_timesteps = 1800000
 end_criteria = 1e-4
 FDTD = openEMS(NrTS=max_timesteps, EndCriteria=end_criteria)
 FDTD.SetCSX(CSX)

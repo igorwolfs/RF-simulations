@@ -13,6 +13,9 @@ import os
 pythonpath = PurePath(Path(__file__).parents[2], 'python_libs')
 sys.path.append(os.path.abspath(pythonpath))
 
+if not (os.path.isdir(pythonpath)):
+      raise SystemError("Folder python_libs not found")
+
 
 ### Import Libraries
 from pylab import *

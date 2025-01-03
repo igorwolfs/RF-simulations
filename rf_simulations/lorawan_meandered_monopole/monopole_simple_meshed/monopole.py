@@ -1,8 +1,7 @@
 """
 Goal: 
-- write the required meshing functions.
-- Import the inverted F-antenna.
-- Mesh the antenna.
+- Attempt to recreate the lorawan 868 MHz antenna with the correct feed-line.
+- Change the antenna and the feed-line accordingly in order to produce a correct frequency that in fact fits on the board.
 """
 
 import sys
@@ -10,7 +9,7 @@ from pathlib import Path, PurePath
 import os
 
 # Add path to python
-pythonpath = PurePath(Path(__file__).parents[2], 'python_libs')
+pythonpath = PurePath(Path(__file__).parents[3], 'python_libs')
 sys.path.append(os.path.abspath(pythonpath))
 
 if not (os.path.isdir(pythonpath)):
@@ -54,7 +53,7 @@ model_files = [file_ for file_ in model_files if file_.endswith('.stl')]
 CSX = ContinuousStructure()
 ## * Limit the simulation to 30k timesteps
 ## * Define a reduced end criteria of -40dB
-max_timesteps = 540000*3
+max_timesteps = 310697 * 3
 end_criteria = 1e-4
 FDTD = openEMS(NrTS=max_timesteps, EndCriteria=end_criteria)
 FDTD.SetCSX(CSX)
@@ -65,7 +64,7 @@ FDTD.SetCSX(CSX)
 FDTD.SetBoundaryCond( ['MUR', 'MUR', 'MUR', 'MUR', 'MUR', 'MUR'] )
 
 
-#######################################################################################################################################
+###################################F####################################################################################################
 # COORDINATE SYSTEM
 #######################################################################################################################################
 def mesh():
@@ -84,8 +83,8 @@ mesh.z = np.array([])
 #######################################################################################################################################
 
 # setup FDTD parameter & excitation function
-f0 = 2.5e9 # center frequency
-fc = 0.5e9 # 20 dB corner frequency
+f0 = 868e6 # center frequency
+fc = 300e6 # 20 dB corner frequency
 
 
 FDTD.SetGaussExcite( f0, fc )
@@ -102,11 +101,14 @@ materialList = {}
 
 ## FR4
 substrate_epsR   = 3.38
-substrate_kappa  = 1e-3 * 2*pi*2.45e9 * EPS0*substrate_epsR
+substrate_kappa  = 1e-3 * 2*pi*2.45e9 * EPS0 * substrate_epsR
 materialList['FR4'] = CSX.AddMaterial( 'FR4', epsilon=substrate_epsR)#, kappa=substrate_kappa)
 
 ## ANTENNA
-materialList['mifa'] = CSX.AddMetal('mifa')
+materialList['monopole'] = CSX.AddMetal('monopole')
+
+## GND
+materialList['gnd'] = CSX.AddMetal('gnd')
 
 ## AIR
 materialList['air'] = CSX.AddMaterial('air')
@@ -121,19 +123,24 @@ polyhedrons = {}
 ### * Boxes
 ## ANTENNA
 # 55 mm height, 16 mm width
-mifa_filepath = os.path.join(stl_path, "freecad-mifa.stl")
-polyhedrons['mifa']  = materialList['mifa'].AddPolyhedronReader(mifa_filepath,  priority=5)
-assert(polyhedrons['mifa'] .ReadFile(), f"Found file")
+mifa_filepath = os.path.join(stl_path, "monopole.stl")
+polyhedrons['monopole']  = materialList['monopole'].AddPolyhedronReader(mifa_filepath,  priority=5)
+assert(polyhedrons['monopole'] .ReadFile(), f"Found file")
+
+## GND
+gnd_filepath = os.path.join(stl_path, "gnd.stl")
+polyhedrons['gnd'] = materialList['gnd'].AddPolyhedronReader(gnd_filepath, priority=3)
+assert(polyhedrons['gnd'].ReadFile(), f"Found file")
 
 
 ## SUBSTRATE
 # 56 mm height, 18 mm width
-FR4_filepath = os.path.join(stl_path, "freecad-FR4.stl")
+FR4_filepath = os.path.join(stl_path, "FR4.stl")
 polyhedrons['FR4'] = materialList['FR4'].AddPolyhedronReader(FR4_filepath, priority=4)
 assert(polyhedrons['FR4'] .ReadFile(), f"Found file")
 
 ## AIR
-air_filepath = os.path.join(stl_path, "freecad-air.stl")
+air_filepath = os.path.join(stl_path, "air.stl")
 polyhedrons['air'] = materialList['air'].AddPolyhedronReader(air_filepath, priority=3)
 assert(polyhedrons['air'].ReadFile(), f"Found file")
 
@@ -145,30 +152,6 @@ from CSXCAD.SmoothMeshLines import SmoothMeshLines
 Make sure the mesh is 1/rd inside, and 2/3rds outside the PEC boundary
 '''
 from mesher import find_poly_min_max, add_poly_mesh_pec, add_poly_mesh_boundary, add_poly_mesh_substrate, find_mins_maxs, add_port_mesh
-
-## AIR
-mesh_lists_air = add_poly_mesh_boundary(polyhedrons['air'])
-mesh.x = np.concatenate((mesh.x, mesh_lists_air[0]))
-mesh.y = np.concatenate((mesh.y, mesh_lists_air[1]))
-mesh.z = np.concatenate((mesh.z, mesh_lists_air[2]))
-print(f"AIR MESH LIST: \n- {[sorted(lst) for lst in mesh_lists_air]}")
-find_poly_min_max(polyhedrons['air'])
-
-## SUBSTRATE
-mesh_lists_fr4 = add_poly_mesh_substrate(polyhedrons['FR4'], 1/3)
-mesh.x = np.concatenate((mesh.x, mesh_lists_fr4[0]))
-mesh.y = np.concatenate((mesh.y, mesh_lists_fr4[1]))
-mesh.z = np.concatenate((mesh.z, mesh_lists_fr4[2]))
-print(f"FR4 MESH LIST: \n- {[sorted(lst) for lst in mesh_lists_fr4]}")
-find_poly_min_max(polyhedrons['FR4'])
-
-## ANTENNA
-mesh_lists_mifa = add_poly_mesh_pec(polyhedrons['mifa'], 1/3, unit=1e-3)
-mesh.x = np.concatenate((mesh.x, mesh_lists_mifa[0]))
-mesh.y = np.concatenate((mesh.y, mesh_lists_mifa[1]))
-mesh.z = np.concatenate((mesh.z, mesh_lists_mifa[2]))
-print(f"MIFA MESH LIST: \n- {[sorted(lst) for lst in mesh_lists_mifa]}")
-find_poly_min_max(polyhedrons['mifa'])
 
 #######################################################################################################################################
 # PROBES
@@ -185,16 +168,16 @@ feed_R = 50
 from CSXCAD.CSPrimitives import CSPrimPolyhedron, CSPrimPolyhedronReader
 ## Lumped Port
 import stl
-lumped_port_filepath = os.path.join(stl_path, "freecad-excitation.stl")
+lumped_port_filepath = os.path.join(stl_path, "excitation.stl")
 lumped_port_mesh =  stl.mesh.Mesh.from_file(lumped_port_filepath)
 portin_start, portin_stop = find_mins_maxs(lumped_port_mesh)
 
-mesh_lists_portin = add_port_mesh(portin_start, portin_stop)
-mesh.x = np.concatenate((mesh.x, mesh_lists_portin[0]))
-mesh.y = np.concatenate((mesh.y, mesh_lists_portin[1]))
-mesh.z = np.concatenate((mesh.z, mesh_lists_portin[2]))
-
-print(f"PORTIN mesh_list: {mesh_lists_portin}")
+mesh_0 = np.load(os.path.join(stl_path, "mesh_0.npy"))
+mesh.x = np.concatenate((mesh.x, mesh_0))
+mesh_1 = np.load(os.path.join(stl_path, "mesh_1.npy"))
+mesh.y = np.concatenate((mesh.y, mesh_1))
+mesh_2 = np.load(os.path.join(stl_path, "mesh_2.npy"))
+mesh.z = np.concatenate((mesh.z, mesh_2))
 
 
 print(f"resolution_U: {res_u}")
@@ -202,9 +185,9 @@ print("mesh.x: {mesh.x}\r\n", sorted(mesh.x))
 print("mesh.y: {mesh.y}\r\n", sorted(mesh.y))
 print("mesh.z: {mesh.z}\r\n", sorted(mesh.z))
 
-mesh.x = SmoothMeshLines(mesh.x, res_u, ratio=1.4)
-mesh.y = SmoothMeshLines(mesh.y, res_u, ratio=1.4)
-mesh.z = SmoothMeshLines(mesh.z, res_u, ratio=1.4)
+# mesh.x = SmoothMeshLines(mesh.x, res_u, ratio=1.1)
+# mesh.y = SmoothMeshLines(mesh.y, res_u, ratio=1.1)
+# mesh.z = SmoothMeshLines(mesh.z, res_u, ratio=1.1)
 
 print("mesh.x: {mesh.x}\r\n", mesh.x)
 print("mesh.y: {mesh.y}\r\n", mesh.y)
@@ -258,7 +241,7 @@ if sim_enabled:
 # POST_PROCESSING
 #######################################################################################################################################
 
-freq = np.linspace(max(1e9,f0-fc),f0+fc,501)
+freq = np.linspace(f0-fc,f0+fc,1001)
 ports['portin'].CalcPort(Sim_Path, freq)
 
 ### Reflection
@@ -283,8 +266,16 @@ legend()
 ylabel('Zin (Ohm)')
 xlabel('Frequency (GHz)')
 plt.savefig(os.path.join(Plot_Path, 'impedance.pdf'))
-
 show()
+
+### SAVE IMPEDANCE
+import csv
+csv_path = os.path.join(Plot_Path, 'impedance.csv')
+with open(csv_path, 'w', newline='') as csvfile:
+    z_writer = csv.writer(csvfile, delimiter=' ', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    for idx, row in enumerate(Zin):
+        z_writer.writerow([freq[idx], np.real(row), np.imag(row)])
+
 
 # Check if the reflection drops extremely low somewhere
 idx = np.where((s11_dB<-10) & (s11_dB==np.min(s11_dB)))[0]
