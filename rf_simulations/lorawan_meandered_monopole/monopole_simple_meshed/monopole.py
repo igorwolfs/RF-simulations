@@ -53,7 +53,7 @@ model_files = [file_ for file_ in model_files if file_.endswith('.stl')]
 CSX = ContinuousStructure()
 ## * Limit the simulation to 30k timesteps
 ## * Define a reduced end criteria of -40dB
-max_timesteps = 310697 * 3
+max_timesteps = 556134 * 3
 end_criteria = 1e-4
 FDTD = openEMS(NrTS=max_timesteps, EndCriteria=end_criteria)
 FDTD.SetCSX(CSX)
@@ -164,7 +164,7 @@ WARNING:
 -> SO: probe errors can be a consequence of (like most erros in FDTD) incorrect meshing
 
 '''
-feed_R = 50
+feed_R = 3864
 from CSXCAD.CSPrimitives import CSPrimPolyhedron, CSPrimPolyhedronReader
 ## Lumped Port
 import stl
