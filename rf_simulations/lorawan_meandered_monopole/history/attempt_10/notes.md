@@ -14,3 +14,6 @@ I case of lorawan that's 300/(868*20 * sqrt(3.5)) m (9.23 mm) apart.
 Used freecad for meshing here, this resulted in an extremely low simulation duration, but pretty heavy oscillations indicating a bad simulation accuracy. On top of that only a single resonance peak was detected (second one), probably because lack of points around the antenna PEC.
 
 Try increasing the meshsize by adding more points in freecad (especially around the antenna) and check the simulation.
+
+# TODO
+Check how the amount of timesteps for the excitation signal are calculated.

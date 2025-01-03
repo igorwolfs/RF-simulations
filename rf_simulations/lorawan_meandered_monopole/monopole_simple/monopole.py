@@ -9,9 +9,11 @@ from pathlib import Path, PurePath
 import os
 
 # Add path to python
-pythonpath = PurePath(Path(__file__).parents[2], 'python_libs')
+pythonpath = PurePath(Path(__file__).parents[3], 'python_libs')
 sys.path.append(os.path.abspath(pythonpath))
 
+if not (os.path.isdir(pythonpath)):
+      raise SystemError("Folder python_libs not found")
 
 ### Import Libraries
 from pylab import *
@@ -43,7 +45,7 @@ if sim_enabled:
 		os.mkdir(Sim_Path)
 
 ## Get models
-stl_path = os.path.join(currDir, "freecad_monopole_modified")
+stl_path = os.path.join(currDir, "freecad")
 model_files = os.listdir(stl_path)
 model_files = [file_ for file_ in model_files if file_.endswith('.stl')]
 
@@ -192,7 +194,7 @@ find_poly_min_max(polyhedrons['gnd'])
 #######################################################################################################################################
 ports = {}
 
-    '''
+'''
 WARNING: 
 -> in this case, if we don't choose our mesh size small enough, the voltage probe doesn't even get to a 1D integral, and errors ensue.
 -> SO: probe errors can be a consequence of (like most erros in FDTD) incorrect meshing
