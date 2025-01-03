@@ -51,6 +51,7 @@ def add_poly_mesh_pec(polyhedron, wavelength, factor=1/3, tol= np.array([0.1, 0.
         for i in range(len(coords[c_i])):
             dist = 0
             if i == 0:
+                print(f"coords: {coords}")
                 dist = np.abs(coords[c_i][0]-coords[c_i][1])
             elif i == len(coords[c_i])-1:
                 dist = np.abs(coords[c_i][len(coords[c_i])-1]-coords[c_i][len(coords[c_i])-2])
