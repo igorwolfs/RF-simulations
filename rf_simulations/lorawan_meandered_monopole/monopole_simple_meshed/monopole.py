@@ -165,7 +165,7 @@ WARNING:
 -> SO: probe errors can be a consequence of (like most erros in FDTD) incorrect meshing
 
 '''
-feed_R = 1250
+feed_R = 50
 from CSXCAD.CSPrimitives import CSPrimPolyhedron, CSPrimPolyhedronReader
 ## Lumped Port
 import stl
