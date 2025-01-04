@@ -149,7 +149,7 @@ from CSXCAD.SmoothMeshLines import SmoothMeshLines
 
 
 '''
-Make sure the mesh is 1/rd inside, and 2/3rds outside the PEC boundary
+Make sure the mesh is 1/rd inside   , and 2/3rds outside the PEC boundary
 '''
 from mesher import find_poly_min_max, add_poly_mesh_pec, add_poly_mesh_boundary, add_poly_mesh_substrate, find_mins_maxs, add_port_mesh
 
