@@ -53,7 +53,7 @@ model_files = [file_ for file_ in model_files if file_.endswith('.stl')]
 CSX = ContinuousStructure()
 ## * Limit the simulation to 30k timesteps
 ## * Define a reduced end criteria of -40dB
-max_timesteps = 556134 * 3
+max_timesteps = 155191 * 3
 end_criteria = 1e-4
 FDTD = openEMS(NrTS=max_timesteps, EndCriteria=end_criteria)
 FDTD.SetCSX(CSX)
@@ -118,6 +118,7 @@ materialList['air'] = CSX.AddMaterial('air')
 # Geometry and Grid
 #######################################################################################################################################
 
+from mesher import find_poly_min_max, find_mins_maxs
 
 polyhedrons = {}
 ### * Boxes
@@ -138,6 +139,7 @@ assert(polyhedrons['gnd'].ReadFile(), f"Found file")
 FR4_filepath = os.path.join(stl_path, "FR4.stl")
 polyhedrons['FR4'] = materialList['FR4'].AddPolyhedronReader(FR4_filepath, priority=4)
 assert(polyhedrons['FR4'] .ReadFile(), f"Found file")
+find_poly_min_max(polyhedrons['FR4'])
 
 ## AIR
 air_filepath = os.path.join(stl_path, "air.stl")
@@ -151,7 +153,6 @@ from CSXCAD.SmoothMeshLines import SmoothMeshLines
 '''
 Make sure the mesh is 1/rd inside, and 2/3rds outside the PEC boundary
 '''
-from mesher import find_poly_min_max, add_poly_mesh_pec, add_poly_mesh_boundary, add_poly_mesh_substrate, find_mins_maxs, add_port_mesh
 
 #######################################################################################################################################
 # PROBES
@@ -164,7 +165,7 @@ WARNING:
 -> SO: probe errors can be a consequence of (like most erros in FDTD) incorrect meshing
 
 '''
-feed_R = 3864
+feed_R = 1250
 from CSXCAD.CSPrimitives import CSPrimPolyhedron, CSPrimPolyhedronReader
 ## Lumped Port
 import stl
@@ -173,17 +174,24 @@ lumped_port_mesh =  stl.mesh.Mesh.from_file(lumped_port_filepath)
 portin_start, portin_stop = find_mins_maxs(lumped_port_mesh)
 
 mesh_0 = np.load(os.path.join(stl_path, "mesh_0.npy"))
-mesh.x = np.concatenate((mesh.x, mesh_0))
 mesh_1 = np.load(os.path.join(stl_path, "mesh_1.npy"))
-mesh.y = np.concatenate((mesh.y, mesh_1))
 mesh_2 = np.load(os.path.join(stl_path, "mesh_2.npy"))
-mesh.z = np.concatenate((mesh.z, mesh_2))
+
+meshes = [mesh_0, mesh_1, mesh_2]
+
+from mesh_checker import filter_close_coordinates
+meshes_new = filter_close_coordinates(meshes, polyhedrons)
 
 
 print(f"resolution_U: {res_u}")
 print("mesh.x: {mesh.x}\r\n", sorted(mesh.x))
 print("mesh.y: {mesh.y}\r\n", sorted(mesh.y))
 print("mesh.z: {mesh.z}\r\n", sorted(mesh.z))
+
+
+mesh.x = np.concatenate((mesh.x, meshes_new[0]))
+mesh.y = np.concatenate((mesh.y, meshes_new[1]))
+mesh.z = np.concatenate((mesh.z, meshes_new[2]))
 
 # mesh.x = SmoothMeshLines(mesh.x, res_u, ratio=1.1)
 # mesh.y = SmoothMeshLines(mesh.y, res_u, ratio=1.1)
@@ -196,7 +204,6 @@ print("mesh.z: {mesh.z}\r\n", mesh.z)
 openEMS_grid.AddLine('x', mesh.x)
 openEMS_grid.AddLine('y', mesh.y)
 openEMS_grid.AddLine('z', mesh.z)
-
 
 ports['portin'] = FDTD.AddLumpedPort(port_nr=1, R=feed_R, start=portin_start, stop=portin_stop, p_dir='y', excite=1, priority=6)
 
@@ -268,14 +275,20 @@ xlabel('Frequency (GHz)')
 plt.savefig(os.path.join(Plot_Path, 'impedance.pdf'))
 show()
 
-### SAVE IMPEDANCE
+### SAVE IMPEDANCE AND S-PARAMETERS
 import csv
-csv_path = os.path.join(Plot_Path, 'impedance.csv')
-with open(csv_path, 'w', newline='') as csvfile:
+z_path = os.path.join(Plot_Path, 'impedance.csv')
+s_path = os.path.join(Plot_Path, 's11.csv')
+
+with open(z_path, 'w', newline='') as csvfile:
     z_writer = csv.writer(csvfile, delimiter=' ', quotechar='|', quoting=csv.QUOTE_MINIMAL)
     for idx, row in enumerate(Zin):
         z_writer.writerow([freq[idx], np.real(row), np.imag(row)])
 
+with open(s_path, 'w', newline='') as csvfile:
+    z_writer = csv.writer(csvfile, delimiter=' ', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    for idx, row in enumerate(s11_dB):
+        z_writer.writerow([freq[idx],  row])
 
 # Check if the reflection drops extremely low somewhere
 idx = np.where((s11_dB<-10) & (s11_dB==np.min(s11_dB)))[0]

@@ -140,3 +140,4 @@ def find_mins_maxs(obj):
     minz = obj.z.min()
     maxz = obj.z.max()
     return np.array([minx, miny, minz]), np.array([maxx, maxy, maxz])
+
