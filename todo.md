@@ -1,3 +1,5 @@
+Any further antenna designs or iteration should be preceded by coding the following: 
+
 # S-parameter stability gridding optimization
 - (Far future) Implement some kind-of function that auto-adds points to the existing base mesh
 - (Far Far future) Make the function auto-add points in a loop and make the simulation run again and again, check for s-parameter impedance convergence as a stop-point for simulations.
