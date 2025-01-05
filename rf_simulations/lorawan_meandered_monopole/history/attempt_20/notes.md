@@ -36,5 +36,6 @@ The self-resonant frequency of a conductor is where its inductance and capacitan
 - If it is wider and this leads to more coupling: more capacitive
 
 ## Reduction of resonant frequency
-A reduction in resonnat frequency means the electrical length is larger.
+A reduction in resonant frequency means the electrical length is larger.
 
+The structure now adds onto the antenna, it's part of it.
