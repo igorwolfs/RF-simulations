@@ -1,5 +1,5 @@
 # RF-simulations
-This repo contains my learning progress in openEMS and related software for visualization.
+This repo contains my learning progress in openEMS and related software for RF simulation and visualization.
 
 ## Resources
 ### Learning FTDT method
