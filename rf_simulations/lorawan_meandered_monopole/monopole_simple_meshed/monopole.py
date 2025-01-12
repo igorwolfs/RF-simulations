@@ -25,7 +25,7 @@ from openEMS.physical_constants import *
 import shutil
 
 APPCSXCAD_CMD = '~/opt/openEMS/bin/AppCSXCAD'
-sim_enabled = True
+sim_enabled = False
 
 ### CONSTANTS
 from openEMS.physical_constants import *
@@ -243,7 +243,6 @@ if sim_enabled:
     FDTD.Run(Sim_Path, cleanup=True, debug_material=True, debug_pec=True, debug_operator=True, debug_boxes=True, debug_csx=True, verbose=3)
 
 
-
 #######################################################################################################################################
 # POST_PROCESSING
 #######################################################################################################################################
@@ -253,6 +252,7 @@ ports['portin'].CalcPort(Sim_Path, freq)
 
 ### Reflection
 s11 = ports['portin'].uf_ref / ports['portin'].uf_inc
+print(f"s11: {s11}")
 s11_dB = 20.0*np.log10(np.abs(s11))
 figure()
 plot(freq/1e9, s11_dB, 'k-', linewidth=2, label='$S_{11}$')
@@ -318,3 +318,8 @@ print(f"Directivity dmax: {nf2ff_res.Dmax}, {10*log10(nf2ff_res.Dmax)} dBi")
 
 P_in = real(0.5 * ports['portin'].uf_tot * np.conjugate( ports['portin'].if_tot )) # antenna feed power
 print(f"efficiency: nu_rad = {100*nf2ff_res.Prad/real(P_in[idx[0]])}")
+
+from touchstone_writer import write_touchstone
+path_name = os.path.join(Plot_Path, 's_params')
+touchstone_dict = {'path_name':path_name, 'Z_ref':50, 'S':s11, 'MHz':freq}
+write_touchstone(touchstone_dict)
