@@ -18,5 +18,4 @@ def write_touchstone(touchstone_dict):
         freq = touchstone_dict['MHz'][i]
         s_param = touchstone_dict['S'][i]
         file.write(f"{freq / 1e6} {s_param.real} {s_param.imag}\n")
-
     file.close()

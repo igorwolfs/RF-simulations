@@ -198,8 +198,8 @@ ports = {}
 WARNING: 
 -> in this case, if we don't choose our mesh size small enough, the voltage probe doesn't even get to a 1D integral, and errors ensue.
 -> SO: probe errors can be a consequence of (like most erros in FDTD) incorrect meshing
-
 '''
+
 feed_R = 50
 from CSXCAD.CSPrimitives import CSPrimPolyhedron, CSPrimPolyhedronReader
 ## Lumped Port
@@ -214,8 +214,6 @@ mesh.y = np.concatenate((mesh.y, mesh_lists_portin[1]))
 mesh.z = np.concatenate((mesh.z, mesh_lists_portin[2]))
 
 print(f"PORTIN mesh_list: {mesh_lists_portin}")
-
-
 print(f"resolution_U: {res_u}")
 print("mesh.x: {mesh.x}\r\n", sorted(mesh.x))
 print("mesh.y: {mesh.y}\r\n", sorted(mesh.y))
@@ -257,7 +255,6 @@ dumps['ht'].AddBox(start_ebox, stop_ebox, priority=0 )
 # RUN
 #######################################################################################################################################
 
-
 ### Run the simulation
 if sim_enabled:
     CSX_file = os.path.join(Sim_Path, f'{file_name}.xml')
@@ -270,8 +267,6 @@ if sim_enabled:
 
     # FDTD.Run(Sim_Path, cleanup=True)
     FDTD.Run(Sim_Path, cleanup=True, debug_material=True, debug_pec=True, debug_operator=True, debug_boxes=True, debug_csx=True, verbose=3)
-
-
 
 #######################################################################################################################################
 # POST_PROCESSING
