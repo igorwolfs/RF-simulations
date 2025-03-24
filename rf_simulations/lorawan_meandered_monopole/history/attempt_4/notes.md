@@ -3,7 +3,7 @@
 - Increased space in x-y-z direction
 
 # Observations
-Resonance peak seems to happen at around 868 MHz somewheere but the real impedance at resonance is high.
+Resonance peak seems to happen at around 868 MHz somewhere but the real impedance at resonance is high.
 
 So the resonance point, which is geometry dependent (and is normally not that shiftable with matching) is good.
 
