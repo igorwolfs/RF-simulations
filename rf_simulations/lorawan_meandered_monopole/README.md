@@ -27,7 +27,7 @@ For later attempts, S-parameter exports and impedance exports were made to use f
 ## Simulation
 Below the final E and H-field output from the OpenEMS simulations of the antenna can be observed.
 
-![](resources/lorawan_meandered_sim.mp4)
+![](resources/kicad_antenna_sim.gif)
 
 ## Note
 OpenEMS is far from ideal for antenna simulations, since it doesn't have basic built-in equations for antennas design, an interactive CAD software, and (most importantly) the possibility to iterate over a range of values for a parameter (e.g.: antenna length / thickness / width / material).
