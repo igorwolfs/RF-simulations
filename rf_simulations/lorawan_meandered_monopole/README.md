@@ -24,5 +24,10 @@ The full design history with simulations can be found inside the subfolders [her
 
 For later attempts, S-parameter exports and impedance exports were made to use for matching with [SimNEC](https://www.ae6ty.com/smith_charts/).
 
+## Simulation
+Below the final E and H-field output from the OpenEMS simulations of the antenna can be observed.
+
+![](resources/lorawan_meandered_sim.mp4)
+
 ## Note
 OpenEMS is far from ideal for antenna simulations, since it doesn't have basic built-in equations for antennas design, an interactive CAD software, and (most importantly) the possibility to iterate over a range of values for a parameter (e.g.: antenna length / thickness / width / material).
