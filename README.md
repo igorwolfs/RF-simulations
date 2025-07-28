@@ -75,6 +75,37 @@ Mostly electric field applied from a copper waveguide to a ground plane (i.e. a 
 - Far-field probe: make sure the antenna is situated centrally with respect to the far-field box.
 
 
+## Tips
+### FreeCad
+- In the next antenna project, try to make the sheet belong to the same part, and try to have multiple bodies belong to that part.
+#### Indicating lengths in FreeCad
+Do indicate the right length in freecad use
+
+1. Select 2-lengths.
+2. Length: length in the normal direction compared to main face
+3. Length2: length in the direction parallel but opposite to the normal.
+
+So if you want to have an object of length 2 mm, floating 1 mm from the normal then
+- length = 3 mm
+- length2 = -1 mm
+
+note that for some annoying reason the length2 can't be 0, so we need to use a very small number here instead
+
+#### Creating VIAS in FreeCad
+1. Sketch a single via (hollow cylinder)
+2. Open the Draft-tool
+3. The "Position" needs to be set to the position where the x, y and z repetition needs to be started from. E.g.: the left/right upper/down most-position.
+4. The x/y/z-interval x/y/z needs to be set to the distance between each repetition
+5. Use the copy and rotate tool to make multiple copies of the same via-structure and rotate if necessary
+6. Make sure to add all of these together inside a single "part"-container
+7. Export as STL.
+
+
+### Meandering
+- When meandering the antenna, the impedance increases because there is inductive coupling with meanders (so inductance goes up)
+	- An increased ground plane decreases impedance, since it reduces certain parasitics.
+
+
 ## Resources
 ### Learning FTDT method
 Quick overview of EM theory, finite-method code architecture, types of materials and their models, ..:
