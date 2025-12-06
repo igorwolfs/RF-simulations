@@ -11,3 +11,4 @@ octave_tutorials/tmp_mod/*
 *.xml
 *.vtp
 **/__pycache__
+posts/*

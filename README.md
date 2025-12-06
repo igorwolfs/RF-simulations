@@ -103,7 +103,7 @@ note that for some annoying reason the length2 can't be 0, so we need to use a v
 
 ### Meandering
 - When meandering the antenna, the impedance increases because there is inductive coupling with meanders (so inductance goes up)
-	- An increased ground plane decreases impedance, since it reduces certain parasitics.
+- An increased ground plane decreases impedance, since it reduces certain parasitics.
 
 
 ## Resources
