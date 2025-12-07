@@ -70,6 +70,7 @@ for name, thickness in layers:
     obj = get_or_create(name, shape)
     apply_transparency(obj)
     current_z += thickness
+    
 
 
 # ==========================================
